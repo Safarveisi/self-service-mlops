@@ -9,6 +9,5 @@ In this project, I will build a self-service MLOps platform that enables data sc
 ```bash
 cd terraform/k8s
 terraform init
-terraform apply -auto-approve
+terraform apply --auto-approve
 ```
-
