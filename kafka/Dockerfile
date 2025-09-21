@@ -16,9 +16,7 @@ WORKDIR /home/app
 ENV PATH="/home/app/.local/bin:$PATH"
 
 # Add the application code and dependencies (owned by 'app')
-COPY --chown=app:app ["kafka_connector.py", "requirements.txt", "./"]
+COPY --chown=app:app ["kafka_connector_consumer.py", "kafka_connector_producer.py", "requirements.txt", "./"]
 
 RUN pip install --no-cache-dir --upgrade --user pip \
     && pip install --no-cache-dir --user -r requirements.txt
-
-CMD [ "python", "kafka_connector.py" ]
