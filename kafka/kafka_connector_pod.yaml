@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kafka-connector
+  namespace: kafka
+  labels:
+    app: kafka-connector
+spec:
+  restartPolicy: Never
+  containers:
+    - name: connector
+      image: ciaa/kafka_connector:0.1.0
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: KAFKA_CLIENT_PASSWORDS
+          valueFrom:
+            secretKeyRef:
+              name: kafka-mlflow-kafka-user-passwords
+              key: client-passwords
