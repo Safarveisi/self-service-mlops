@@ -15,7 +15,7 @@ consumer = KafkaConsumer(
     security_protocol="SASL_PLAINTEXT",
     sasl_mechanism="SCRAM-SHA-256",
     sasl_plain_username="user1",
-    sasl_plain_password=KAFKA_CLIENT_PASSWORDS
+    sasl_plain_password=KAFKA_CLIENT_PASSWORDS,
 )
 
 # This will run indefinitely, listening for messages

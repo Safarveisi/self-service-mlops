@@ -9,7 +9,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: connector
-      image: ciaa/kafka_connector:0.2.0
+      image: ciaa/kafka-connector:v0.1.0
       imagePullPolicy: Always
       command: ["python", "kafka_connector_consumer.py"]
       env:
