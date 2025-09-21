@@ -18,7 +18,6 @@ consumer = KafkaConsumer(
     sasl_plain_password=KAFKA_CLIENT_PASSWORDS
 )
 
-
 # This will run indefinitely, listening for messages
 for message in consumer:
     print(message.value)
