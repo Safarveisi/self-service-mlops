@@ -17,10 +17,9 @@ terraform apply --auto-approve
 
 #### Kafka
 
-Edit the `helm-charts/kafka/values.yaml` file to add your desired topics under the `provisioning.topics`,  section.
+Edit the `helm-charts/kafka/values.yaml` file to add your details such as `provisioning.topics`, `storageclass`, `klusternamespace` and etc.
 
 ```bash
 cd helm-charts/kafka
 helm upgrade --install -n kafka kafka ./kafka -f ./kafka/values.yaml --create-namespace
 ```
-
