@@ -39,3 +39,4 @@ terraform.rc
 
 ####### personal
 *tmp*
+terraform/k8s/modules/variables.tf
