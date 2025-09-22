@@ -12,6 +12,9 @@ kubectl run kafka-mlflow-kafka-client --restart='Never' --image docker.io/bitnam
 #    username="username" \
 #    password="password";
 
+# You can get the password by (make sure the secret name is up-to-date)
+kubectl get secret kafka-mlflow-kafka-user-passwords --namespace kafka -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1
+
 kubectl cp --namespace kafka ./client.properties kafka-mlflow-kafka-client:/tmp/client.properties
 
 # Access the container bash shell
