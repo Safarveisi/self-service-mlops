@@ -33,7 +33,7 @@ spec:
             - name: KAFKA_SASL_USERNAME
               value: "user1"
             - name: KAFKA_TOPIC
-              value: "test"
+              value: "mlflow-model-production-version"
             - name: KAFKA_CLIENT_PASSWORDS
               valueFrom:
                 secretKeyRef:

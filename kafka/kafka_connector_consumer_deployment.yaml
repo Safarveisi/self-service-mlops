@@ -21,6 +21,12 @@ spec:
           imagePullPolicy: Always
           command: ["python", "kafka_connector_consumer.py"]
           env:
+            - name: KAFKA_BOOTSTRAP
+              value: "kafka-mlflow-kafka.kafka.svc.cluster.local:9092"
+            - name: KAFKA_SASL_USERNAME
+              value: "user1"
+            - name: KAFKA_TOPIC
+              value: "mlflow-model-production-version"
             - name: KAFKA_CLIENT_PASSWORDS
               valueFrom:
                 secretKeyRef:

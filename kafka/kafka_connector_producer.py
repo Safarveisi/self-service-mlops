@@ -12,12 +12,12 @@ from kafka import KafkaProducer
 PORT = int(os.getenv("PORT", "8080"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 APP_NAME = os.getenv("APP_NAME", "mlflow-webhook-handler")
-KAFKA_BOOTSTRAP = os.getenv(
-    "KAFKA_BOOTSTRAP", "kafka-mlflow-kafka.kafka.svc.cluster.local:9092"
-)
-KAFKA_SASL_USERNAME = os.getenv("KAFKA_SASL_USERNAME", "user1")
-KAFKA_CLIENT_PASSWORDS = os.getenv("KAFKA_CLIENT_PASSWORDS", "")
-KAFKA_TOPIC = os.getenv("KAFKA_TOPIC", "test")
+required = {
+    "KAFKA_CLIENT_PASSWORDS": os.getenv("KAFKA_CLIENT_PASSWORDS", ""),
+    "KAFKA_TOPIC": os.getenv("KAFKA_TOPIC", ""),
+    "KAFKA_SASL_USERNAME": os.getenv("KAFKA_SASL_USERNAME", ""),
+    "KAFKA_BOOTSTRAP": os.getenv("KAFKA_BOOTSTRAP", ""),
+}
 
 producer: Optional[KafkaProducer] = None
 
@@ -39,17 +39,17 @@ async def lifespan(app: FastAPI):
     global producer
     log.info("Starting %s", APP_NAME)
 
-    if not KAFKA_CLIENT_PASSWORDS:
-        print("Environment variable KAFKA_CLIENT_PASSWORDS not set.")
-        raise RuntimeError("KAFKA_CLIENT_PASSWORDS missing")
+    missing = [k for k, v in required.items() if not v]
+    if missing:
+        raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
 
     producer = KafkaProducer(
-        bootstrap_servers=KAFKA_BOOTSTRAP,
+        bootstrap_servers=required["KAFKA_BOOTSTRAP"],
         value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         security_protocol="SASL_PLAINTEXT",
         sasl_mechanism="SCRAM-SHA-256",
-        sasl_plain_username=KAFKA_SASL_USERNAME,
-        sasl_plain_password=KAFKA_CLIENT_PASSWORDS,
+        sasl_plain_username=required["KAFKA_SASL_USERNAME"],
+        sasl_plain_password=required["KAFKA_CLIENT_PASSWORDS"],
         retries=3,
         request_timeout_ms=40000,
     )
@@ -94,7 +94,7 @@ async def mlflow_webhook(request: Request):
         raise HTTPException(status_code=500, detail="Kafka producer not initialized")
 
     # send and block briefly to surface errors (keeps it simple)
-    future = producer.send(KAFKA_TOPIC, payload.model_dump())
+    future = producer.send(required["KAFKA_TOPIC"], payload.model_dump())
     # If you want non-blocking, remove .get(); here we wait up to 10s like your snippet.
     metadata = future.get(timeout=10)
 
