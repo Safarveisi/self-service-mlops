@@ -39,3 +39,5 @@ terraform.rc
 
 ####### personal
 *tmp*
+
+*client.properties*

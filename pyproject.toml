@@ -3,13 +3,16 @@ name = "self-service-mlops"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Safarveisi",email = "sajad.safarveisi@gmail.com"}
+    { name = "Safarveisi", email = "sajad.safarveisi@gmail.com" },
+    { name = "Milad Norouzi", email = "infraartists@gmail.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
 ]
 
+[tool.poetry]
+package-mode = false
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
