@@ -35,7 +35,7 @@ class ModelVersionPayload(BaseModel):
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> None:
     global producer
     log.info("Starting %s", APP_NAME)
 
@@ -71,12 +71,12 @@ app = FastAPI(title=APP_NAME, lifespan=lifespan)
 
 
 @app.get("/healthz")
-async def healthz():
+async def healthz() -> dict:
     return {"status": "ok", "app": APP_NAME}
 
 
 @app.post("/webhook/mlflow")
-async def mlflow_webhook(request: Request):
+async def mlflow_webhook(request: Request) -> JSONResponse:
     """
     Receives MLflow webhook POSTs and publishes the payload to Kafka.
     """
