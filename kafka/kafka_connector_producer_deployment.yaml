@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-handler
+  namespace: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-handler
+  template:
+    metadata:
+      labels:
+        app: webhook-handler
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+      containers:
+        - name: app
+          image: ciaa/kafka-connector:v0.1.0
+          command: ["python", "kafka_connector_producer.py"]
+          imagePullPolicy: Always
+          env:
+            - name: LOG_LEVEL
+              value: INFO
+            - name: APP_NAME
+              value: mlflow-webhook-handler
+            - name: PORT
+              value: "8080"
+            - name: KAFKA_BOOTSTRAP
+              value: "kafka-mlflow-kafka.kafka.svc.cluster.local:9092"
+            - name: KAFKA_SASL_USERNAME
+              value: "user1"
+            - name: KAFKA_TOPIC
+              value: "mlflow-model-production-version"
+            - name: KAFKA_CLIENT_PASSWORDS
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-mlflow-kafka-user-passwords
+                  key: client-passwords
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 5
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            initialDelaySeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-handler
+  namespace: kafka
+spec:
+  selector:
+    app: webhook-handler
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  type: ClusterIP

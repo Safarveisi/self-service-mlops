@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-connector-consumer
+  namespace: kafka
+  labels:
+    app: kafka-connector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-connector
+  template:
+    metadata:
+      labels:
+        app: kafka-connector
+    spec:
+      containers:
+        - name: connector
+          image: ciaa/kafka-connector:v0.1.0
+          imagePullPolicy: Always
+          command: ["python", "kafka_connector_consumer.py"]
+          env:
+            - name: KAFKA_BOOTSTRAP
+              value: "kafka-mlflow-kafka.kafka.svc.cluster.local:9092"
+            - name: KAFKA_SASL_USERNAME
+              value: "user1"
+            - name: KAFKA_TOPIC
+              value: "mlflow-model-production-version"
+            - name: KAFKA_CLIENT_PASSWORDS
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-mlflow-kafka-user-passwords
+                  key: client-passwords
