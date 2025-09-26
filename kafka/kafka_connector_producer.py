@@ -25,13 +25,15 @@ logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(message
 log = logging.getLogger(APP_NAME)
 
 
-class ModelVersionPayload(BaseModel):
-    name: str
+class SetModelVersionTagPayload(BaseModel):
+    name: str = Field(..., description="Mlflow registered model's name")
     version: str = Field(..., description="Model version as a string, e.g. '1'")
-    source: str
-    run_id: str
-    tags: Dict[str, str] = {}
-    description: Optional[str] = None
+    key: str = Field(..., description="Tag key")
+    value: str = Field(..., description="Tag value")
+    run_id: Optional[str] = Field(None, description="Associated MLflow run ID")
+    experiment_id: Optional[str] = Field(
+        None, description="Associated MLflow experiment ID"
+    )
 
 
 @asynccontextmanager
@@ -87,7 +89,7 @@ async def mlflow_webhook(request: Request) -> JSONResponse:
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
     # Validate & coerce types
-    payload = ModelVersionPayload.model_validate(data)
+    payload = SetModelVersionTagPayload.model_validate(data)
 
     # Produce to Kafka
     if producer is None:
@@ -106,6 +108,8 @@ async def mlflow_webhook(request: Request) -> JSONResponse:
             "offset": metadata.offset,
             "model": payload.name,
             "version": payload.version,
+            "run_id": payload.run_id,
+            "experiment_id": payload.experiment_id
         },
         status_code=202,
     )

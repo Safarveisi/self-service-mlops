@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Example curl command to test the webhook endpoint
+# Prequisites: Make srue the K8s port-forwarding is running
+# kubectl -n kafka port-forward svc/webhook-handler 8080:80
+
+curl -i -X POST http://localhost:8080/webhook/mlflow \
+  -H "Content-Type: application/json" \
+  --data '{
+    "name": "example_model",
+    "version": "1",
+    "key": "stage",
+    "value": "Production",
+    "run_id": "abcd1234abcd5678",
+    "experiment_id": "69"
+  }'
