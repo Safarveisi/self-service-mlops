@@ -9,6 +9,19 @@
 crash.log
 crash.*.log
 
+# ipynb files
+*.ipynb
+
+# Secret files
+*.pem
+*.key
+*.crt
+*.cer
+*credential*.yaml
+*credential*.yml
+*secret*.yaml
+*secret*.yml
+
 # Docker build log files
 build.log
 
