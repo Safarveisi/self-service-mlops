@@ -20,4 +20,5 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.group.dev.dependencies]
 black = "^25.9.0"
+ipykernel = "^6.30.1"
 
