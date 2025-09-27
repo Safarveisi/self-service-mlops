@@ -42,4 +42,4 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
     && conda install -y -c conda-forge --file requirements.txt
 
 # --- Add your application code
-COPY --chown=app:app ["kafka_connector_consumer.py", "kafka_connector_producer.py", "./"]
+COPY --chown=app:app *.py ./

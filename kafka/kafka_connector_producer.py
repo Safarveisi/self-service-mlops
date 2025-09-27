@@ -109,7 +109,7 @@ async def mlflow_webhook(request: Request) -> JSONResponse:
             "model": payload.name,
             "version": payload.version,
             "run_id": payload.run_id,
-            "experiment_id": payload.experiment_id
+            "experiment_id": payload.experiment_id,
         },
         status_code=202,
     )
