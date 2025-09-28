@@ -45,6 +45,10 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 kubectl apply --server-side -f https://github.com/kserve/kserve/releases/download/v0.14.1/kserve.yaml
 kubectl apply --server-side -f https://github.com/kserve/kserve/releases/download/v0.14.1/kserve-cluster-resources.yaml
 ```
+
+> [!NOTE]
+> KServe brings several benefits — most notably, you can deploy many models without building and pushing your own Docker  image. Just point KServe to your model artifacts and use the appropriate runtime.
+
 #### Testing the inference endpoint
 
 Test the endpoint by navigating to `model-endpoint` and running `prediction`, which sends a sample payload and prints the model’s prediction. This assumes the endpoint was created successfully.
