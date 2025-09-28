@@ -11,8 +11,18 @@ ARG DEBIAN_FRONTEND=noninteractive
 # --- OS deps (as root)
 RUN apt-get update && apt-get -y upgrade \
   && apt-get install -y --no-install-recommends \
-     git wget g++ ca-certificates \
+     git wget curl g++ ca-certificates \
   && rm -rf /var/lib/apt/lists/*
+
+# --- Install kubectl v1.29.2
+# RUN set -eux; \
+#     KVER="v1.29.2"; \
+#     curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/${KVER}/bin/linux/amd64/kubectl"; \
+#     curl -fsSLo /tmp/kubectl.sha256 "https://dl.k8s.io/release/${KVER}/bin/linux/amd64/kubectl.sha256"; \
+#     echo "$(cat /tmp/kubectl.sha256)  /usr/local/bin/kubectl" | sha256sum -c -; \
+#     chmod +x /usr/local/bin/kubectl; \
+#     rm -f /tmp/kubectl.sha256; \
+#     kubectl version --client
 
 # --- Non-root user
 RUN groupadd --gid 1001 app \
@@ -29,17 +39,11 @@ RUN wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.s
 USER app
 WORKDIR /home/app
 
-# PATH order: your miniconda first, then user-local bin for pip --user installs
 ENV PATH="/home/app/miniconda3/bin:/home/app/.local/bin:${PATH}"
 
-# --- Dependency layer (better cache): copy only requirements first
-COPY --chown=app:app requirements.txt ./requirements.txt
+COPY --chown=app:app . ./
 
-# Install conda-pack and other app dependencies via conda 
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
     && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r \
     && conda install -y -c conda-forge conda-pack \
     && conda install -y -c conda-forge --file requirements.txt
-
-# --- Add your application code
-COPY --chown=app:app *.py ./

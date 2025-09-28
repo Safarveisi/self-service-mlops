@@ -1,0 +1,17 @@
+#!/bin/bash
+
+INGRESS_HOST=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].port}')
+SERVICE_HOSTNAME=$(kubectl get inferenceservice iris-classifier -o jsonpath='{.status.url}' | cut -d "/" -f 3)
+
+echo "Ingress host name is : $INGRESS_HOST"
+echo "Ingress port is : $INGRESS_PORT"
+echo "Service host name is : $SERVICE_HOSTNAME"
+
+echo -e "Running inference ...\n"
+
+curl -v \
+  -H "Host: ${SERVICE_HOSTNAME}" \
+  -H "Content-Type: application/json" \
+  http://${INGRESS_HOST}:${INGRESS_PORT}/v2/models/iris-classifier/infer \
+-d @./input.json

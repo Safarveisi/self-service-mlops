@@ -11,6 +11,6 @@ curl -i -X POST http://localhost:8080/webhook/mlflow \
     "version": "1",
     "key": "stage",
     "value": "Production",
-    "run_id": "ff19c64c91a04770920c471f6415f927",
-    "experiment_id": "69"
+    "run_id": "4528ae7bcd7947ef8495810fe22377ec",
+    "experiment_id": "1"
   }'

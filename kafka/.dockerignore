@@ -1,2 +1,4 @@
-*.yaml
-Dockerfile*
+*
+!**/*.py
+!kserve_template.yaml
+!requirements.txt
