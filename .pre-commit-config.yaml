@@ -1,0 +1,57 @@
+repos:
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+    - id: trailing-whitespace
+      types_or: [ text, markdown, python, pyi ]
+    - id: end-of-file-fixer
+      types_or: [ text, markdown, python, pyi ]
+    - id: check-shebang-scripts-are-executable
+      name: check that scripts with shebangs are executable
+      description: ensures that (non-binary) files with a shebang are executable.
+      entry: check-shebang-scripts-are-executable
+      language: python
+      types: [text]
+      stages: [pre-commit, pre-push, manual]
+      minimum_pre_commit_version: 3.2.0
+    - id: check-executables-have-shebangs
+      types_or: [ text, markdown, python, pyi ]
+    - id: check-yaml
+      types_or: [ yaml ]
+    - id: check-added-large-files
+      types_or: [ text, markdown, python, pyi ]
+    - id : check-merge-conflict
+      types_or: [ text, markdown, python, pyi ]
+    - id: check-toml
+      types_or: [ toml ]
+    - id: check-ast
+      name: check python ast
+      description: simply checks whether the files parse as valid python.
+      entry: check-ast
+      language: python
+      types: [python]
+    - id: detect-private-key
+      name: detect private key
+      description: detects the presence of private keys.
+      entry: detect-private-key
+      language: python
+      types: [text]
+
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.11.12
+  hooks:
+    # Run the linter.
+    - id: ruff-check
+      args:
+        - --fix
+      types_or: [ python, pyi ]
+    # Run the formatter.
+    - id: ruff-format
+      types_or: [ python, pyi ]
+
+- repo: https://github.com/gitleaks/gitleaks
+  rev: v8.24.2
+  hooks:
+    - id: gitleaks # For secret scanning/security
