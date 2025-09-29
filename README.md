@@ -4,11 +4,11 @@ In this project, I will build a self-service MLOps platform that enables data sc
 
 Platform created via AWS services
 
-![self service mlops on aws](./platform_aws.png)
+![self service mlops on aws](platform/platform_aws.png)
 
 Equivalent platform via open source tools and technologies
 
-![self service mlops via open source](./platform_open_source.png)
+![self service mlops via open source](platform/platform_open_source.png)
 
 ### Deploy managed kubernetes cluster
 
