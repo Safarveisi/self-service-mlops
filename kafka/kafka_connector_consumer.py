@@ -130,6 +130,9 @@ for message in consumer:
 
     log.info("Checking the status of the deployed endpoint")
     is_running = True
+    time.sleep(
+        RETRY_INTERVAL_SECONDS
+    )  # Initial wait before starting to check pod status
     start_time = time.time()
 
     while not CREATE_MODEL_ENDPOINT.check_k8s_pods_running(
