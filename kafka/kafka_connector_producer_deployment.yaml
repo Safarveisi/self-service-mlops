@@ -18,7 +18,7 @@ spec:
         runAsUser: 1001
       containers:
         - name: app
-          image: ciaa/kafka-connector:v0.1.0
+          image: ciaa/kafka-connector:v0.2.0
           command: ["python", "kafka_connector_producer.py"]
           imagePullPolicy: Always
           env:
@@ -32,7 +32,7 @@ spec:
               value: "kafka-mlflow-kafka.kafka.svc.cluster.local:9092"
             - name: KAFKA_SASL_USERNAME
               value: "user1"
-            - name: KAFKA_TOPIC
+            - name: KAFKA_TOPIC_MODEL_PRODUCTION_VERSION
               value: "mlflow-model-production-version"
             - name: KAFKA_CLIENT_PASSWORDS
               valueFrom:

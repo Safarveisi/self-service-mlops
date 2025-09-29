@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Dict, Optional
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -14,7 +14,9 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 APP_NAME = os.getenv("APP_NAME", "mlflow-webhook-handler")
 required = {
     "KAFKA_CLIENT_PASSWORDS": os.getenv("KAFKA_CLIENT_PASSWORDS", ""),
-    "KAFKA_TOPIC": os.getenv("KAFKA_TOPIC", ""),
+    "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION": os.getenv(
+        "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION", ""
+    ),
     "KAFKA_SASL_USERNAME": os.getenv("KAFKA_SASL_USERNAME", ""),
     "KAFKA_BOOTSTRAP": os.getenv("KAFKA_BOOTSTRAP", ""),
 }
@@ -25,13 +27,15 @@ logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(message
 log = logging.getLogger(APP_NAME)
 
 
-class ModelVersionPayload(BaseModel):
-    name: str
+class SetModelVersionTagPayload(BaseModel):
+    name: str = Field(..., description="Mlflow registered model's name")
     version: str = Field(..., description="Model version as a string, e.g. '1'")
-    source: str
-    run_id: str
-    tags: Dict[str, str] = {}
-    description: Optional[str] = None
+    key: str = Field(..., description="Tag key")
+    value: str = Field(..., description="Tag value")
+    run_id: Optional[str] = Field(None, description="Associated MLflow run ID")
+    experiment_id: Optional[str] = Field(
+        None, description="Associated MLflow experiment ID"
+    )
 
 
 @asynccontextmanager
@@ -87,14 +91,16 @@ async def mlflow_webhook(request: Request) -> JSONResponse:
         raise HTTPException(status_code=400, detail="Invalid JSON")
 
     # Validate & coerce types
-    payload = ModelVersionPayload.model_validate(data)
+    payload = SetModelVersionTagPayload.model_validate(data)
 
     # Produce to Kafka
     if producer is None:
         raise HTTPException(status_code=500, detail="Kafka producer not initialized")
 
     # send and block briefly to surface errors (keeps it simple)
-    future = producer.send(required["KAFKA_TOPIC"], payload.model_dump())
+    future = producer.send(
+        required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"], payload.model_dump()
+    )
     # If you want non-blocking, remove .get(); here we wait up to 10s like your snippet.
     metadata = future.get(timeout=10)
 
@@ -106,6 +112,8 @@ async def mlflow_webhook(request: Request) -> JSONResponse:
             "offset": metadata.offset,
             "model": payload.name,
             "version": payload.version,
+            "run_id": payload.run_id,
+            "experiment_id": payload.experiment_id,
         },
         status_code=202,
     )

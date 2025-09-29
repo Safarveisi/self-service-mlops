@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: connector
-          image: ciaa/kafka-connector:v0.1.0
+          image: ciaa/kafka-connector:v0.2.0
           imagePullPolicy: Always
           command: ["python", "kafka_connector_consumer.py"]
           env:
@@ -25,10 +25,42 @@ spec:
               value: "kafka-mlflow-kafka.kafka.svc.cluster.local:9092"
             - name: KAFKA_SASL_USERNAME
               value: "user1"
-            - name: KAFKA_TOPIC
+            - name: KAFKA_TOPIC_MODEL_PRODUCTION_VERSION
               value: "mlflow-model-production-version"
+            - name: KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT
+              value: "mlflow-model-production-endpoint"
             - name: KAFKA_CLIENT_PASSWORDS
               valueFrom:
                 secretKeyRef:
                   name: kafka-mlflow-kafka-user-passwords
                   key: client-passwords
+            - name: MLFLOW_ROOT_PREFIX
+              valueFrom:
+                secretKeyRef:
+                  name: s3-credentials
+                  key: MLFLOW_ROOT_PREFIX
+            - name: S3_BUCKET_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: s3-credentials
+                  key: S3_BUCKET_NAME
+            - name: S3_REGION_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: s3-credentials
+                  key: S3_REGION_NAME
+            - name: S3_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: s3-credentials
+                  key: S3_HOST
+            - name: S3_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: s3-credentials
+                  key: S3_ACCESS_KEY
+            - name: S3_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: s3-credentials
+                  key: S3_SECRET_KEY
