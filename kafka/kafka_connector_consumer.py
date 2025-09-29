@@ -3,7 +3,7 @@ from utils import get_logger, run_command
 from model_endpoint import CreateModelEndpoint
 import time
 import json
-from kafka import KafkaConsumer
+from kafka import KafkaConsumer, KafkaProducer
 
 log = get_logger()
 
@@ -71,7 +71,12 @@ def prepare_packed_conda_env(experiment_id: str, run_id: str) -> None:
 
 required = {
     "KAFKA_CLIENT_PASSWORDS": os.getenv("KAFKA_CLIENT_PASSWORDS", ""),
-    "KAFKA_TOPIC": os.getenv("KAFKA_TOPIC", ""),
+    "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION": os.getenv(
+        "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION", ""
+    ),
+    "KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT": os.getenv(
+        "KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT", ""
+    ),
     "KAFKA_SASL_USERNAME": os.getenv("KAFKA_SASL_USERNAME", ""),
     "KAFKA_BOOTSTRAP": os.getenv("KAFKA_BOOTSTRAP", ""),
     "MLFLOW_ROOT_PREFIX": os.getenv("MLFLOW_ROOT_PREFIX", ""),
@@ -87,17 +92,42 @@ missing = [k for k, v in required.items() if not v]
 if missing:
     raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
 
+kafka_args = {
+    "bootstrap_servers": required["KAFKA_BOOTSTRAP"],
+    "group_id": "my_group",
+    "value_deserializer": lambda v: json.loads(v.decode("utf-8")),
+    "value_serializer": lambda v: json.dumps(v).encode("utf-8"),
+    "auto_offset_reset": "earliest",
+    "enable_auto_commit": False,
+    "security_protocol": "SASL_PLAINTEXT",
+    "sasl_mechanism": "SCRAM-SHA-256",
+    "sasl_plain_username": required["KAFKA_SASL_USERNAME"],
+    "sasl_plain_password": required["KAFKA_CLIENT_PASSWORDS"],
+    "retries": 3,
+    "request_timeout_ms": 40000,
+}
+
 consumer = KafkaConsumer(
-    required["KAFKA_TOPIC"],
-    bootstrap_servers=required["KAFKA_BOOTSTRAP"],
-    group_id="my_group",
-    value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-    auto_offset_reset="earliest",
-    enable_auto_commit=False,
-    security_protocol="SASL_PLAINTEXT",
-    sasl_mechanism="SCRAM-SHA-256",
-    sasl_plain_username=required["KAFKA_SASL_USERNAME"],
-    sasl_plain_password=required["KAFKA_CLIENT_PASSWORDS"],
+    required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"],
+    **{
+        k: v
+        for k, v in kafka_args.items()
+        if k not in ("value_serializer", "retries", "request_timeout_ms")
+    },
+)
+
+producer = KafkaProducer(
+    **{
+        k: v
+        for k, v in kafka_args.items()
+        if k
+        not in (
+            "group_id",
+            "value_deserializer",
+            "auto_offset_reset",
+            "enable_auto_commit",
+        )
+    }
 )
 
 # This will run indefinitely, listening for messages
@@ -151,4 +181,20 @@ for message in consumer:
         )
     else:
         log.info("Created model endpoint for exp=%s run=%s", experiment_id, run_id)
-    consumer.commit()  # Manually commit the offset after processing the message
+        log.info(
+            "Notifying via Kafka topic %s",
+            required["KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT"],
+        )
+        producer.send(
+            required["KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT"],
+            {
+                "experiment_id": experiment_id,
+                "run_id": run_id,
+                "inference_service_name": inference_service_name,
+                "inference_service_namespace": inference_service_namespace,
+                "status": "Running",
+                "message": "Model endpoint is up and running",
+            },
+        )
+    log.info("Commit the Kafka offset")
+    consumer.commit()

@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import Dict, Optional
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -14,7 +14,9 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 APP_NAME = os.getenv("APP_NAME", "mlflow-webhook-handler")
 required = {
     "KAFKA_CLIENT_PASSWORDS": os.getenv("KAFKA_CLIENT_PASSWORDS", ""),
-    "KAFKA_TOPIC": os.getenv("KAFKA_TOPIC", ""),
+    "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION": os.getenv(
+        "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION", ""
+    ),
     "KAFKA_SASL_USERNAME": os.getenv("KAFKA_SASL_USERNAME", ""),
     "KAFKA_BOOTSTRAP": os.getenv("KAFKA_BOOTSTRAP", ""),
 }
@@ -96,7 +98,9 @@ async def mlflow_webhook(request: Request) -> JSONResponse:
         raise HTTPException(status_code=500, detail="Kafka producer not initialized")
 
     # send and block briefly to surface errors (keeps it simple)
-    future = producer.send(required["KAFKA_TOPIC"], payload.model_dump())
+    future = producer.send(
+        required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"], payload.model_dump()
+    )
     # If you want non-blocking, remove .get(); here we wait up to 10s like your snippet.
     metadata = future.get(timeout=10)
 
