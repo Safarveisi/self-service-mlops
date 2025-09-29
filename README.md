@@ -28,6 +28,24 @@ Edit the `helm-charts/kafka/values.yaml` file to add your details such as `provi
 cd helm-charts/kafka
 helm upgrade --install -n kafka kafka ./kafka -f ./kafka/values.yaml --create-namespace
 ```
+#### Elastic search, Filebeat, Kibana (Analytics)
+
+```bash
+cd helm-charts/monitoring
+
+# v8.5.1 at the time we tested
+helm repo add elastic https://helm.elastic.co
+
+# Show options for configuration
+helm show values elastic/elasticsearch > ./elasticsearch/values.yml
+helm show values elastic/filebeat > ./filebeat/values.yml
+helm show values elastic/kibana > ./kibana/values.yml
+
+# Mind the order of execution
+helm install elasticsearch elastic/elasticsearch -f ./elasticsearch/values.yaml
+helm install filebeat elastic/filebeat -f ./filebeat/values.yaml
+helm install kibana elastic/kibana -f ./kibana/values.yaml
+```
 
 ### Create model inference endpoint (similar to AWS SageMaker endpoint)
 
