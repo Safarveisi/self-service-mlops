@@ -19,6 +19,7 @@ repos:
       types_or: [ text, markdown, python, pyi ]
     - id: check-yaml
       types_or: [ yaml ]
+      args: [--allow-multiple-documents]
     - id: check-added-large-files
       types_or: [ text, markdown, python, pyi ]
     - id : check-merge-conflict

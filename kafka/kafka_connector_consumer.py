@@ -1,15 +1,18 @@
 import os
-from typing import List
 from utils import get_logger, run_command
-from model_endpoint import deploy_to_kubernetes, fill_template
+from model_endpoint import CreateModelEndpoint
+import time
 import json
 from kafka import KafkaConsumer
 
 log = get_logger()
 
+RETRY_INTERVAL_SECONDS = 5  # Interval between checks for pod status
+TIMEPOUT_SECONDS = 300  # Timeout for waiting for pods to be in 'Running' state
+CREATE_MODEL_ENDPOINT = CreateModelEndpoint()
+
 
 def prepare_packed_conda_env(experiment_id: str, run_id: str) -> None:
-
     log.info("Packing conda env for exp=%s run=%s", experiment_id, run_id)
     s3_base = [
         "s3cmd",
@@ -115,10 +118,34 @@ for message in consumer:
             "MLFLOW_RUN_ID": run_id,
         }
     )
+
     log.info("Deploying model for exp=%s run=%s", experiment_id, run_id)
     log.info("Filling Kserve template")
-    rendered_yaml = fill_template(required)
+    rendered_yaml = CREATE_MODEL_ENDPOINT.fill_k8s_resource_template(required)
+
     log.info("Deploying to Kubernetes and creating an endpoint")
-    deploy_to_kubernetes(rendered_yaml)
-    log.info("Deployed model for exp=%s run=%s", experiment_id, run_id)
+    inference_service_name, inference_service_namespace = (
+        CREATE_MODEL_ENDPOINT.create_resource_on_k8s(rendered_yaml)
+    )
+
+    log.info("Checking the status of the deployed endpoint")
+    is_running = True
+    start_time = time.time()
+
+    while not CREATE_MODEL_ENDPOINT.check_k8s_pods_running(
+        prefix=inference_service_name, namespace=inference_service_namespace
+    ):
+        if time.time() - start_time > TIMEPOUT_SECONDS:
+            is_running = False
+            break
+        log.info("Waiting for pods to be in 'Running' state...")
+        time.sleep(RETRY_INTERVAL_SECONDS)
+    if not is_running:
+        log.error(
+            "Timeout waiting for pods to be in 'Running' state for exp=%s run=%s",
+            experiment_id,
+            run_id,
+        )
+    else:
+        log.info("Created model endpoint for exp=%s run=%s", experiment_id, run_id)
     consumer.commit()  # Manually commit the offset after processing the message
