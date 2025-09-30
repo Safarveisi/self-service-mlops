@@ -35,7 +35,7 @@ cd helm-charts/monitoring
 # Mind the execution order
 helm install -n monitoring elasticsearch ./elasticsearch -f ./elasticsearch/values.yaml --create-namespace
 helm install -n monitoring filebeat ./filebeat -f ./filebeat/values.yaml
-# Make sure you have ingress-nginx controller installed
+# Make sure you have ingress-nginx controller installed (we access kibana UI through the specified host - see values.yaml)
 helm upgrade --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx \
   --namespace ingress-nginx --create-namespace
