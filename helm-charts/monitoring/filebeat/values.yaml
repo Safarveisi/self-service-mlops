@@ -34,26 +34,25 @@ daemonset:
   # Allows you to add any config files in /usr/share/filebeat
   # such as filebeat.yml for daemonset
   filebeatConfig:
-      filebeat.yml: |
-        filebeat.inputs:
-        - type: container
-          paths:
-            - /var/log/containers/*.log
-          processors:
-          - add_kubernetes_metadata:
-              host: ${NODE_NAME}
-              matchers:
-              - logs_path:
-                  logs_path: "/var/log/containers/"
+    filebeat.yml: |
+      filebeat.inputs:
+      - type: container
+        paths:
+          - /var/log/containers/*.log
+        processors:
+        - add_kubernetes_metadata:
+            host: ${NODE_NAME}
+            matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
 
-        output.elasticsearch:
-          host: '${NODE_NAME}'
-          hosts: '["https://${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}"]'
-          username: '${ELASTICSEARCH_USERNAME}'
-          password: '${ELASTICSEARCH_PASSWORD}'
-          protocol: https
-          ssl.certificate_authorities: ["/usr/share/filebeat/certs/ca.crt"]
-
+      output.elasticsearch:
+        host: '${NODE_NAME}'
+        hosts: '["https://${ELASTICSEARCH_HOSTS:elasticsearch-master:9200}"]'
+        username: '${ELASTICSEARCH_USERNAME}'
+        password: '${ELASTICSEARCH_PASSWORD}'
+        protocol: https
+        ssl.certificate_authorities: ["/usr/share/filebeat/certs/ca.crt"]
   # Only used when updateStrategy is set to "RollingUpdate"
   maxUnavailable: 1
   nodeSelector: {}

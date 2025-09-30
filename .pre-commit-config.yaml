@@ -13,12 +13,14 @@ repos:
       entry: check-shebang-scripts-are-executable
       language: python
       types: [text]
+      exclude: ^helm-charts/
       stages: [pre-commit, pre-push, manual]
       minimum_pre_commit_version: 3.2.0
     - id: check-executables-have-shebangs
       types_or: [ text, markdown, python, pyi ]
     - id: check-yaml
       types_or: [ yaml ]
+      exclude: ^helm-charts/
       args: [--allow-multiple-documents]
     - id: check-added-large-files
       types_or: [ text, markdown, python, pyi ]
