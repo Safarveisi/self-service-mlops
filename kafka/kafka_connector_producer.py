@@ -95,10 +95,6 @@ async def mlflow_webhook(request: Request) -> JSONResponse:
     # Validate & coerce types
     payload = SetModelVersionTagPayload.model_validate(data)
 
-    # Produce to Kafka
-    if producer is None:
-        raise HTTPException(status_code=500, detail="Kafka producer not initialized")
-
     log.info(
         "Producing message to Kafka topic %s",
         required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"],
