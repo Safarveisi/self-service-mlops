@@ -16,7 +16,7 @@ spec:
         app: kafka-connector
     spec:
       containers:
-        - name: connector
+        - name: consumer
           image: ciaa/kafka-connector:v0.2.0
           imagePullPolicy: Always
           command: ["python", "kafka_connector_consumer.py"]

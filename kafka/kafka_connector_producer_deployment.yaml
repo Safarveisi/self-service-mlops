@@ -17,7 +17,7 @@ spec:
         runAsNonRoot: true
         runAsUser: 1001
       containers:
-        - name: app
+        - name: producer
           image: ciaa/kafka-connector:v0.2.0
           command: ["python", "kafka_connector_producer.py"]
           imagePullPolicy: Always

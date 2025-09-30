@@ -20,13 +20,26 @@ terraform apply --auto-approve
 
 ### Deploy helm charts
 
-#### Kafka
+Update `values.yaml` in `helm-charts/` with your custom settings.
 
-Edit the `helm-charts/kafka/values.yaml` file to add your details such as `provisioning.topics`, `storageclass`, `klusternamespace`, etc.
+#### Kafka
 
 ```bash
 cd helm-charts/kafka
 helm upgrade --install -n kafka kafka ./kafka -f ./kafka/values.yaml --create-namespace
+```
+#### Elastic search, Filebeat, Kibana (Analytics)
+
+```bash
+cd helm-charts/monitoring
+# Mind the execution order
+helm install -n monitoring elasticsearch ./elasticsearch -f ./elasticsearch/values.yaml --create-namespace
+helm install -n monitoring filebeat ./filebeat -f ./filebeat/values.yaml
+# Make sure you have ingress-nginx controller installed (we access kibana UI through the specified host - see values.yaml)
+helm upgrade --install ingress-nginx ingress-nginx \
+  --repo https://kubernetes.github.io/ingress-nginx \
+  --namespace ingress-nginx --create-namespace
+helm install -n monitoring kibana ./kibana -f ./kibana/values.yaml
 ```
 
 ### Create model inference endpoint (similar to AWS SageMaker endpoint)
