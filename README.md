@@ -1,6 +1,6 @@
 # Self service MLOps platform
 
-In this project, I will build a self-service MLOps platform that enables data scientists to seamlessly deploy their machine-learning models for inference. The design below demonstrates how this can be achieved using AWS services; in practice, I will implement the solution with open-source technologies that provide equivalent capabilities.
+In this project, we will build a self-service MLOps platform that enables data scientists to seamlessly deploy their machine-learning models for inference. The design below demonstrates how this can be achieved using AWS services; in practice, we will implement the solution with open-source technologies that provide equivalent capabilities.
 
 Platform created via AWS services
 
@@ -32,14 +32,12 @@ helm upgrade --install -n kafka kafka ./kafka -f ./kafka/values.yaml --create-na
 
 ```bash
 cd helm-charts/monitoring
-
 # EFK stack (mind the execution order)
 helm upgrade --install -n monitoring elasticsearch ./elasticsearch -f ./elasticsearch/values.yaml --create-namespace
 helm upgrade --install -n monitoring filebeat ./filebeat -f ./filebeat/values.yaml
 # Make sure you have ingress-nginx controller installed (we access kibana UI through the specified host - see values.yaml)
 helm upgrade --install -n ingress-nginx ingress-nginx ./ingress-nginx -f ./ingress-nginx/values.yaml --create-namespace
 helm upgrade --install -n monitoring kibana ./kibana -f ./kibana/values.yaml
-
 # Prometheus + Grafana
 helm upgrade --install -n prometheus prometheus ./kube-prometheus-stack -f ./kube-prometheus-stack/values.yaml --create-namespace
 ```
