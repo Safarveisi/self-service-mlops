@@ -28,16 +28,20 @@ Update `values.yaml` in `helm-charts/` with your custom settings.
 cd helm-charts/kafka
 helm upgrade --install -n kafka kafka ./kafka -f ./kafka/values.yaml --create-namespace
 ```
-#### Elastic search, Filebeat, Kibana (Analytics)
+#### Monitoring (EFK stack + Prometheus and Grafana)
 
 ```bash
 cd helm-charts/monitoring
-# Mind the execution order
+
+# EFK stack (mind the execution order)
 helm upgrade --install -n monitoring elasticsearch ./elasticsearch -f ./elasticsearch/values.yaml --create-namespace
 helm upgrade --install -n monitoring filebeat ./filebeat -f ./filebeat/values.yaml
 # Make sure you have ingress-nginx controller installed (we access kibana UI through the specified host - see values.yaml)
 helm upgrade --install -n ingress-nginx ingress-nginx ./ingress-nginx -f ./ingress-nginx/values.yaml --create-namespace
 helm upgrade --install -n monitoring kibana ./kibana -f ./kibana/values.yaml
+
+# Prometheus + Grafana
+helm upgrade --install -n prometheus prometheus ./kube-prometheus-stack -f ./kube-prometheus-stack/values.yaml --create-namespace
 ```
 
 ### Create model inference endpoint (similar to AWS SageMaker endpoint)

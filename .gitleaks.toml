@@ -1,0 +1,5 @@
+[allowlist]
+description = "Ignore helm charts directory"
+paths = [
+  '''^helm-charts/''',   # skip everything under helm-charts/
+]
