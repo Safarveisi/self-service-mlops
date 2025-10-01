@@ -68,7 +68,7 @@ kubectl apply --server-side -f https://github.com/kserve/kserve/releases/downloa
 ```
 
 > [!NOTE]
-> KServe brings several benefits — most notably, you can deploy many models without building and pushing your own Docker  image. Just point KServe to your model artifacts and use the appropriate runtime.
+> KServe brings several benefits — most notably, you can deploy many models without building and pushing your own Docker image. Just point KServe to your model artifacts and use the appropriate runtime.
 
 #### Testing the inference endpoint
 
