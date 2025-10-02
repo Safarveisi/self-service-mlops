@@ -1,9 +1,10 @@
-import os
-from utils import get_logger, run_command
-from model_endpoint import CreateModelEndpoint
-import time
 import json
+import os
+import time
+
 from kafka import KafkaConsumer, KafkaProducer
+from model_endpoint import CreateModelEndpoint
+from utils import get_logger, run_command
 
 log = get_logger()
 
