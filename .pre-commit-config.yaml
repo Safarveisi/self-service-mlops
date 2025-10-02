@@ -58,3 +58,13 @@ repos:
   rev: v8.28.0
   hooks:
     - id: gitleaks # For secret scanning/security
+
+- repo: local
+  hooks:
+    - id: update-docker-image-tag
+      name: Update docker image tag in manifest files
+      entry: ./run.sh
+      args:
+        - update_docker_image_tag
+      language: script
+      pass_filenames: false

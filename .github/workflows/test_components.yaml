@@ -16,7 +16,7 @@ jobs:
       - name: Get required Python version
         id: get-python-version
         run: |
-          required_python_version=$(cat pyproject.toml | grep -oE 'requires-python = ">=([0-9]+\.[0-9]+)' | sed 's/.*">=//')
+          required_python_version=$(./run.sh get_required_python_version)
           echo "required_python_version=$required_python_version" >> $GITHUB_OUTPUT
           echo "Required Python version: $required_python_version"
 

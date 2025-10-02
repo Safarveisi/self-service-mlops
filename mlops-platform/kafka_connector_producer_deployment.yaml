@@ -18,7 +18,7 @@ spec:
         runAsUser: 1001
       containers:
         - name: producer
-          image: ciaa/kafka-connector:v0.2.0
+          image: ciaa/kafka-connector:v0.2.0 # LATEST_IMAGE_TAG
           command: ["python", "kafka_connector_producer.py"]
           imagePullPolicy: Always
           env:
