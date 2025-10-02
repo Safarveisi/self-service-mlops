@@ -37,7 +37,7 @@ s3 = session.client(
 
 def list_experiment_prefixes():
     """
-    Returns a list like ['mlflow_dev/12/', 'mlflow_dev/69/', ...]
+    Returns a list like ['self_service_mlops/12/', 'self_service_mlops/69/', ...]
     Uses Delimiter='/' to avoid listing all objects.
     """
     prefixes = []
