@@ -200,3 +200,4 @@ if __name__ == "__main__":
         result = process_message(message, producer)
         log.info(f"Commit the Kafka offset. Result of processing: {result}")
         consumer.commit()
+        log.info("Removed message from the Kafka topic")
