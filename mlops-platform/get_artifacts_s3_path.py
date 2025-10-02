@@ -11,6 +11,7 @@ https://github.com/mlflow/mlflow/issues/17919 for more context.
 import os
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import boto3
 
 # Will cause an error if one of the following env variables does not exist
@@ -76,7 +77,8 @@ def find_first_match() -> str | None:
             key = fut.result()
             if key:
                 stop_event.set()
-                # Optionally: cancel others (not strictly necessary; they'll see stop_event or finish soon)
+                # Optionally: cancel others (not strictly necessary;
+                # they'll see stop_event or finish soon)
                 return f"s3://{S3_BUCKET_NAME}/{key}"
     return None
 

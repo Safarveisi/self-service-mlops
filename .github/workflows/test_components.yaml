@@ -32,5 +32,5 @@ jobs:
 
       - name: Run tests
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/mlops_platform
+          export PYTHONPATH=$PYTHONPATH:$(pwd)/mlops-platform
           pytest tests/

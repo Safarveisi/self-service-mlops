@@ -102,6 +102,7 @@ ignore = [
   "E721", # type-comparison
   "E741", # ambiguous-variable-name
   "F811", # redefined-while-unused
+  "T201", # print found
 ]
 
 [build-system]

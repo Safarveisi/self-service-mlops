@@ -1,12 +1,12 @@
 import json
 import os
 from contextlib import asynccontextmanager
-from typing import Optional
-from utils import get_logger
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
 from kafka import KafkaProducer
+from pydantic import BaseModel, Field
+from utils import get_logger
 
 log = get_logger()
 
@@ -20,7 +20,7 @@ required = {
     "KAFKA_BOOTSTRAP": os.getenv("KAFKA_BOOTSTRAP", ""),
 }
 
-producer: Optional[KafkaProducer] = None
+producer: KafkaProducer | None = None
 
 
 class SetModelVersionTagPayload(BaseModel):
@@ -28,8 +28,8 @@ class SetModelVersionTagPayload(BaseModel):
     version: str = Field(..., description="Model version as a string, e.g. '1'")
     key: str = Field(..., description="Tag key")
     value: str = Field(..., description="Tag value")
-    run_id: Optional[str] = Field(None, description="Associated MLflow run ID")
-    experiment_id: Optional[str] = Field(None, description="Associated MLflow experiment ID")
+    run_id: str | None = Field(None, description="Associated MLflow run ID")
+    experiment_id: str | None = Field(None, description="Associated MLflow experiment ID")
 
 
 @asynccontextmanager

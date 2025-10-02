@@ -1,6 +1,5 @@
-import subprocess
-from typing import List
 import logging
+import subprocess
 import sys
 from threading import Timer
 
@@ -20,7 +19,7 @@ def get_logger(name: str = "myapp") -> logging.Logger:
     return logger
 
 
-def run_command(cmd: List[str], timeout_seconds: int, env: dict | None = None) -> None:
+def run_command(cmd: list[str], timeout_seconds: int, env: dict | None = None) -> None:
     """
     Runs the specified command. If it exits with non-zero status, `RuntimeError` is raised.
     """

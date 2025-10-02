@@ -23,8 +23,8 @@ def env(monkeypatch):
 @pytest.fixture(autouse=True)
 def mock_kubernetes(monkeypatch):
     # Import the real package names to patch their attributes
-    import kubernetes.config as kconf
     import kubernetes.client as kclient
+    import kubernetes.config as kconf
 
     # No-op both config loaders (so import-time calls don't explode)
     monkeypatch.setattr(kconf, "load_incluster_config", lambda *a, **k: None, raising=True)
@@ -55,7 +55,7 @@ def import_module(monkeypatch):
 
 def test_prepare_packed_conda_env_happy_path(monkeypatch):
     # Import after env fixture applied
-    import mlops_platform.kafka_connector_consumer as mod
+    import kafka_connector_consumer as mod
 
     # Mock run_command to capture calls
     calls = []
@@ -89,7 +89,7 @@ def test_prepare_packed_conda_env_happy_path(monkeypatch):
 
 
 def test_process_message_happy_path(monkeypatch):
-    import mlops_platform.kafka_connector_consumer as mod
+    import kafka_connector_consumer as mod
 
     # Stub out the external command runner & file removals
     monkeypatch.setattr(mod, "run_command", lambda *a, **k: 0)
@@ -128,7 +128,7 @@ def test_process_message_happy_path(monkeypatch):
 
 
 def test_process_message_skips_when_missing_ids(monkeypatch):
-    import mlops_platform.kafka_connector_consumer as mod
+    import kafka_connector_consumer as mod
 
     # Prepare a minimal message without run_id
     message = types.SimpleNamespace(value={"experiment_id": "123"})
@@ -151,7 +151,7 @@ def test_process_message_skips_when_missing_ids(monkeypatch):
 
 
 def test_process_message_timeout_path(monkeypatch):
-    import mlops_platform.kafka_connector_consumer as mod
+    import kafka_connector_consumer as mod
 
     # Stub out the external command runner & file removals
     monkeypatch.setattr(mod, "run_command", lambda *a, **k: 0)

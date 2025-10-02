@@ -1,8 +1,8 @@
-import os
-from utils import get_logger
 import json
-from kafka import KafkaConsumer
+import os
 
+from kafka import KafkaConsumer
+from utils import get_logger
 
 log = get_logger()
 
@@ -47,7 +47,8 @@ if __name__ == "__main__":
         message = message.value.get("message", "")
 
         log.info(
-            f"Status for {inference_service_name} in namespace {inference_service_namespace} is {status}."
+            f"Status for {inference_service_name} in namespace "
+            f"{inference_service_namespace} is {status}."
             f" Experiment ID: {experiment_id}, Run ID: {run_id}."
         )
         log.info(f"{message}")

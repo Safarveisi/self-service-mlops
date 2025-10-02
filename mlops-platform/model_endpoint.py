@@ -1,7 +1,7 @@
 from string import Template
+
 import yaml
-from typing import Tuple
-from kubernetes import config, client
+from kubernetes import client, config
 from kubernetes.client import ApiClient
 from kubernetes.client.exceptions import ApiException
 
@@ -24,7 +24,7 @@ class CreateModelEndpoint:
         pods = self.core.list_namespaced_pod(namespace).items
         return all(p.status.phase == "Running" for p in pods if p.metadata.name.startswith(prefix))
 
-    def create_resource_on_k8s(self, rendered_yaml: str) -> Tuple[str, str]:
+    def create_resource_on_k8s(self, rendered_yaml: str) -> tuple[str, str]:
         # For convenience, return the name and namespace of the created InferenceService
         inference_service_name = None
         inference_service_namespace = None
@@ -90,9 +90,7 @@ class CreateModelEndpoint:
 
     @staticmethod
     def fill_k8s_resource_template(values: dict) -> str:
-        with open("kserve_template.yaml", "r", encoding="utf-8") as f:
+        with open("kserve_template.yaml", encoding="utf-8") as f:
             tpl = Template(f.read())
 
-        rendered_yaml = tpl.substitute(values)  # raises KeyError if any placeholder missing
-
-        return rendered_yaml
+        return tpl.substitute(values)  # raises KeyError if any placeholder missing
