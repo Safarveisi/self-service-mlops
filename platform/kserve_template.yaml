@@ -35,7 +35,7 @@ metadata:
 spec:
   predictor:
     containerConcurrency: 10 # Ten requests per pod (InferenceService replica)
-    minReplicas: 1 # This prevents cold start 
+    minReplicas: 1 # This prevents cold start
     maxReplicas: 3 # Maximum number of pods (surplus requests will be buffered)
     serviceAccountName: sa
     model:
@@ -44,7 +44,7 @@ spec:
       protocolVersion: v2
       storageUri: s3://${S3_BUCKET_NAME}/${MLFLOW_ROOT_PREFIX}/${MLFLOW_EXPERIMENT_ID}/${MLFLOW_RUN_ID}/artifacts/estimator
       resources: # Resources for each replica
-        limits: 
+        limits:
           cpu: "3"
           memory: "5Gi"
         requests:

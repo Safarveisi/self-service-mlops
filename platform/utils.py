@@ -1,6 +1,7 @@
 import subprocess
 from typing import List
-import logging, sys
+import logging
+import sys
 from threading import Timer
 
 

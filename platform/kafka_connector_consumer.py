@@ -87,11 +87,6 @@ required = {
     "S3_REGION_NAME": os.getenv("S3_REGION_NAME", ""),
 }
 
-missing = [k for k, v in required.items() if not v]
-
-if missing:
-    raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
-
 kafka_args = {
     "bootstrap_servers": required["KAFKA_BOOTSTRAP"],
     "group_id": "my_group",
@@ -106,6 +101,11 @@ kafka_args = {
     "retries": 3,
     "request_timeout_ms": 40000,
 }
+
+missing = [k for k, v in required.items() if not v]
+
+if missing:
+    raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
 
 consumer = KafkaConsumer(
     required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"],

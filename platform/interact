@@ -8,7 +8,7 @@ function kafka:create_interact_pod() {
 function kafka:access_interact_pod_bash() {
     # You can get the password by (make sure the secret name is up-to-date)
     password=$(kubectl get secret kafka-mlflow-kafka-user-passwords --namespace kafka -o jsonpath='{.data.client-passwords}' | base64 -d | cut -d , -f 1)
-    
+
     # Copy client.properties into the pod's container
     # client.properties should contain the following lines
     cat > client.properties <<EOF
@@ -16,7 +16,7 @@ security.protocol=SASL_PLAINTEXT
 sasl.mechanism=SCRAM-SHA-256
 sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="user1" password="$password";
 EOF
- 
+
     kubectl cp --namespace kafka ./client.properties kafka-mlflow-kafka-client:/tmp/client.properties
     # Access the container bash shell
     kubectl exec --tty -i kafka-mlflow-kafka-client --namespace kafka -- bash
@@ -38,7 +38,7 @@ EOF
     # kafka-console-consumer.sh \
         # --consumer.config /tmp/client.properties \
         # --bootstrap-server kafka-mlflow-kafka.kafka.svc.cluster.local:9092 \
-        # --topic test \ 
+        # --topic test \
         # --from-beginning
 }
 
