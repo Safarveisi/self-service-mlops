@@ -8,7 +8,7 @@ from kafka import KafkaConsumer, KafkaProducer
 log = get_logger()
 
 RETRY_INTERVAL_SECONDS = 5  # Interval between checks for pod status
-TIMEPOUT_SECONDS = 300  # Timeout for waiting for pods to be in 'Running' state
+TIMEOUT_SECONDS = 300  # Timeout for waiting for pods to be in 'Running' state
 CREATE_MODEL_ENDPOINT = CreateModelEndpoint()
 
 required = {
@@ -136,8 +136,8 @@ def process_message(
     producer: KafkaProducer = producer,
     required_env: dict = required,
     retry_interval_seconds: int = RETRY_INTERVAL_SECONDS,
-    timeout_seconds: int = TIMEPOUT_SECONDS,
-) -> None:
+    timeout_seconds: int = TIMEOUT_SECONDS,
+) -> str:
     """Process a single Kafka message."""
     experiment_id = message.value.get("experiment_id")
     run_id = message.value.get("run_id")
@@ -145,7 +145,7 @@ def process_message(
         log.warning(
             "Skipping message without experiment_id or run_id: %s", message.value
         )
-        return
+        return "skipped"
 
     prepare_packed_conda_env(experiment_id, run_id)
     required_env.update(
@@ -175,12 +175,12 @@ def process_message(
         time.sleep(retry_interval_seconds)
 
     if not is_running:
-        log.error(
+        log.warning(
             "Timeout waiting for pods to be in 'Running' state for exp=%s run=%s",
             experiment_id,
             run_id,
         )
-        return
+        return "timeout"
 
     log.info("Created model endpoint for exp=%s run=%s", experiment_id, run_id)
     log.info(
@@ -198,11 +198,12 @@ def process_message(
             "message": "Model endpoint is up and running",
         },
     )
+    return "success"
 
 
 if __name__ == "__main__":
     # This will run indefinitely, listening for messages
     for message in consumer:
-        process_message(message)
-        log.info("Commit the Kafka offset")
+        result = process_message(message)
+        log.info(f"Commit the Kafka offset. Result of processing: {result}")
         consumer.commit()
