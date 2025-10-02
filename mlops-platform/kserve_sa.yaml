@@ -3,7 +3,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: apply-kserve
-  namespace: default
+  namespace: default # Change this later
 rules:
   # core: Secret + ServiceAccount
   - apiGroups: [""]
@@ -24,7 +24,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: apply-kserve
-  namespace: default            # <-- permissions apply in 'default'
+  namespace: default            # <-- permissions apply in 'default' (change this later)
 subjects:
   - kind: ServiceAccount
     name: default               # <-- the SA name used by your pod
