@@ -38,19 +38,22 @@ consumer = KafkaConsumer(
     **kafka_args,
 )
 
-# We can extend the logic here
-for message in consumer:
-    inference_service_name = message.value.get("inference_service_name", "")
-    inference_service_namespace = message.value.get("inference_service_namespace", "")
-    experiment_id = message.value.get("experiment_id", "")
-    run_id = message.value.get("run_id", "")
-    status = message.value.get("status", "")
-    message = message.value.get("message", "")
+if __name__ == "__main__":
+    # We can extend the logic here
+    for message in consumer:
+        inference_service_name = message.value.get("inference_service_name", "")
+        inference_service_namespace = message.value.get(
+            "inference_service_namespace", ""
+        )
+        experiment_id = message.value.get("experiment_id", "")
+        run_id = message.value.get("run_id", "")
+        status = message.value.get("status", "")
+        message = message.value.get("message", "")
 
-    log.info(
-        f"Status for {inference_service_name} in namespace {inference_service_namespace} is {status}."
-        f" Experiment ID: {experiment_id}, Run ID: {run_id}."
-    )
-    log.info(f"{message}")
+        log.info(
+            f"Status for {inference_service_name} in namespace {inference_service_namespace} is {status}."
+            f" Experiment ID: {experiment_id}, Run ID: {run_id}."
+        )
+        log.info(f"{message}")
 
-    consumer.commit()  # Manually commit the offset after processing the message
+        consumer.commit()  # Manually commit the offset after processing the message
