@@ -68,6 +68,9 @@ kubectl apply --server-side -f https://github.com/kserve/kserve/releases/downloa
 > [!NOTE]
 > KServe brings several benefits — most notably, you can deploy many models without building and pushing your own Docker image. Just point KServe to your model artifacts and use the appropriate runtime.
 
-#### Testing the inference endpoint
+### Repository Guide
 
-Test the endpoint by navigating to `model-endpoint` and running `prediction`, which sends a sample payload and prints the model’s prediction. This assumes the endpoint was created successfully.
+| Directory         | What it’s for / How to use                                                                                                                                                                                                         |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `model-endpoint/` | Sample inference client and payloads to exercise a KServe InferenceService. After deploying your model, `cd model-endpoint` and run the provided script (e.g., `prediction`) to send a test request and print the prediction.      |
+| `platform/`       | Cluster/platform-level scaffolding and configuration that supports the self-service MLOps setup (base manifests, operators, helper assets). Use this to organize reusable, cluster-wide components independent of specific models. |
