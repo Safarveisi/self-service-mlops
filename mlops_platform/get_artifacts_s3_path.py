@@ -20,9 +20,7 @@ S3_SECRET_KEY = os.environ["S3_SECRET_KEY"]
 S3_HOST = os.environ["S3_HOST"]
 S3_BUCKET_NAME = os.environ["S3_BUCKET_NAME"]
 
-ROOT_PREFIX = (
-    "self_service_mlops/"  # Example hard-coded root prefix where experiments are stored
-)
+ROOT_PREFIX = "self_service_mlops/"  # Example hard-coded root prefix where experiments are stored
 MAX_WORKERS = 4
 
 session = boto3.session.Session(
@@ -42,9 +40,7 @@ def list_experiment_prefixes():
     """
     prefixes = []
     paginator = s3.get_paginator("list_objects_v2")
-    for page in paginator.paginate(
-        Bucket=S3_BUCKET_NAME, Prefix=ROOT_PREFIX, Delimiter="/"
-    ):
+    for page in paginator.paginate(Bucket=S3_BUCKET_NAME, Prefix=ROOT_PREFIX, Delimiter="/"):
         for cp in page.get("CommonPrefixes", []):
             p = cp.get("Prefix")
             if p:
@@ -52,9 +48,7 @@ def list_experiment_prefixes():
     return prefixes
 
 
-def scan_prefix_for_substr(
-    prefix: str, substr: str, stop_event: threading.Event
-) -> str | None:
+def scan_prefix_for_substr(prefix: str, substr: str, stop_event: threading.Event) -> str | None:
     """
     Scan all objects under a specific experiment prefix for substr.
     Short-circuits if stop_event is set, or returns the first matching key.
@@ -77,9 +71,7 @@ def find_first_match() -> str | None:
 
     stop_event = threading.Event()
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
-        futures = {
-            pool.submit(scan_prefix_for_substr, p, stop_event): p for p in exp_prefixes
-        }
+        futures = {pool.submit(scan_prefix_for_substr, p, stop_event): p for p in exp_prefixes}
         for fut in as_completed(futures):
             key = fut.result()
             if key:

@@ -9,9 +9,7 @@ log = get_logger()
 
 required = {
     "KAFKA_CLIENT_PASSWORDS": os.getenv("KAFKA_CLIENT_PASSWORDS", ""),
-    "KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT": os.getenv(
-        "KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT", ""
-    ),
+    "KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT": os.getenv("KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT", ""),
     "KAFKA_SASL_USERNAME": os.getenv("KAFKA_SASL_USERNAME", ""),
     "KAFKA_BOOTSTRAP": os.getenv("KAFKA_BOOTSTRAP", ""),
 }
@@ -42,9 +40,7 @@ if __name__ == "__main__":
     # We can extend the logic here
     for message in consumer:
         inference_service_name = message.value.get("inference_service_name", "")
-        inference_service_namespace = message.value.get(
-            "inference_service_namespace", ""
-        )
+        inference_service_namespace = message.value.get("inference_service_namespace", "")
         experiment_id = message.value.get("experiment_id", "")
         run_id = message.value.get("run_id", "")
         status = message.value.get("status", "")

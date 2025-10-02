@@ -10,12 +10,8 @@ class CreateModelEndpoint:
     def __init__(self):
         config.load_incluster_config()  # or config.load_kube_config() for local testing
         k8s_client = ApiClient()  # Shared client instance
-        self.core = client.CoreV1Api(
-            k8s_client
-        )  # CoreV1Api instance for core resources
-        self.crd = client.CustomObjectsApi(
-            k8s_client
-        )  # CustomObjectsApi instance for CRDs
+        self.core = client.CoreV1Api(k8s_client)  # CoreV1Api instance for core resources
+        self.crd = client.CustomObjectsApi(k8s_client)  # CustomObjectsApi instance for CRDs
 
     def check_k8s_pods_running(
         self,
@@ -26,11 +22,7 @@ class CreateModelEndpoint:
         Returns True if all pods with the specified prefix are in Running state.
         """
         pods = self.core.list_namespaced_pod(namespace).items
-        return all(
-            p.status.phase == "Running"
-            for p in pods
-            if p.metadata.name.startswith(prefix)
-        )
+        return all(p.status.phase == "Running" for p in pods if p.metadata.name.startswith(prefix))
 
     def create_resource_on_k8s(self, rendered_yaml: str) -> Tuple[str, str]:
         # For convenience, return the name and namespace of the created InferenceService
@@ -48,10 +40,7 @@ class CreateModelEndpoint:
             name = meta.get("name")
 
             # ---- KServe CRD: InferenceService (use SSA PATCH) ----
-            if (
-                api_version.startswith("serving.kserve.io/")
-                and kind.lower() == "inferenceservice"
-            ):
+            if api_version.startswith("serving.kserve.io/") and kind.lower() == "inferenceservice":
                 group = "serving.kserve.io"
                 version = api_version.split("/", 1)[1]  # e.g., v1beta1
                 plural = "inferenceservices"
@@ -79,14 +68,10 @@ class CreateModelEndpoint:
             # ---- Core resources: Secret / ServiceAccount (use SSA PATCH) ----
             if api_version == "v1" and kind == "Secret":
                 try:
-                    self.core.patch_namespaced_secret(
-                        name=name, namespace=namespace, body=doc
-                    )
+                    self.core.patch_namespaced_secret(name=name, namespace=namespace, body=doc)
                 except ApiException as e:
                     if e.status == 404:
-                        self.core.create_namespaced_secret(
-                            namespace=namespace, body=doc
-                        )
+                        self.core.create_namespaced_secret(namespace=namespace, body=doc)
                     else:
                         raise
 
@@ -97,9 +82,7 @@ class CreateModelEndpoint:
                     )
                 except ApiException as e:
                     if e.status == 404:
-                        self.core.create_namespaced_service_account(
-                            namespace=namespace, body=doc
-                        )
+                        self.core.create_namespaced_service_account(namespace=namespace, body=doc)
                     else:
                         raise
 
@@ -110,8 +93,6 @@ class CreateModelEndpoint:
         with open("kserve_template.yaml", "r", encoding="utf-8") as f:
             tpl = Template(f.read())
 
-        rendered_yaml = tpl.substitute(
-            values
-        )  # raises KeyError if any placeholder missing
+        rendered_yaml = tpl.substitute(values)  # raises KeyError if any placeholder missing
 
         return rendered_yaml

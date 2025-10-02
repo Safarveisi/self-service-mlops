@@ -13,12 +13,8 @@ CREATE_MODEL_ENDPOINT = CreateModelEndpoint()
 
 required = {
     "KAFKA_CLIENT_PASSWORDS": os.getenv("KAFKA_CLIENT_PASSWORDS", ""),
-    "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION": os.getenv(
-        "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION", ""
-    ),
-    "KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT": os.getenv(
-        "KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT", ""
-    ),
+    "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION": os.getenv("KAFKA_TOPIC_MODEL_PRODUCTION_VERSION", ""),
+    "KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT": os.getenv("KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT", ""),
     "KAFKA_SASL_USERNAME": os.getenv("KAFKA_SASL_USERNAME", ""),
     "KAFKA_BOOTSTRAP": os.getenv("KAFKA_BOOTSTRAP", ""),
     "MLFLOW_ROOT_PREFIX": os.getenv("MLFLOW_ROOT_PREFIX", ""),
@@ -48,29 +44,6 @@ missing = [k for k, v in required.items() if not v]
 
 if missing:
     raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
-
-consumer = KafkaConsumer(
-    required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"],
-    **{
-        k: v
-        for k, v in kafka_args.items()
-        if k not in ("value_serializer", "retries", "request_timeout_ms")
-    },
-)
-
-producer = KafkaProducer(
-    **{
-        k: v
-        for k, v in kafka_args.items()
-        if k
-        not in (
-            "group_id",
-            "value_deserializer",
-            "auto_offset_reset",
-            "enable_auto_commit",
-        )
-    }
-)
 
 
 def prepare_packed_conda_env(experiment_id: str, run_id: str) -> None:
@@ -132,8 +105,8 @@ def prepare_packed_conda_env(experiment_id: str, run_id: str) -> None:
 
 def process_message(
     message: any,
+    producer: KafkaProducer,
     create_model_endpoint: str = CREATE_MODEL_ENDPOINT,
-    producer: KafkaProducer = producer,
     required_env: dict = required,
     retry_interval_seconds: int = RETRY_INTERVAL_SECONDS,
     timeout_seconds: int = TIMEOUT_SECONDS,
@@ -142,15 +115,11 @@ def process_message(
     experiment_id = message.value.get("experiment_id")
     run_id = message.value.get("run_id")
     if not experiment_id or not run_id:
-        log.warning(
-            "Skipping message without experiment_id or run_id: %s", message.value
-        )
+        log.warning("Skipping message without experiment_id or run_id: %s", message.value)
         return "skipped"
 
     prepare_packed_conda_env(experiment_id, run_id)
-    required_env.update(
-        {"MLFLOW_EXPERIMENT_ID": experiment_id, "MLFLOW_RUN_ID": run_id}
-    )
+    required_env.update({"MLFLOW_EXPERIMENT_ID": experiment_id, "MLFLOW_RUN_ID": run_id})
 
     log.info("Deploying model for exp=%s run=%s", experiment_id, run_id)
     rendered_yaml = create_model_endpoint.fill_k8s_resource_template(required_env)
@@ -202,8 +171,31 @@ def process_message(
 
 
 if __name__ == "__main__":
+    consumer = KafkaConsumer(
+        required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"],
+        **{
+            k: v
+            for k, v in kafka_args.items()
+            if k not in ("value_serializer", "retries", "request_timeout_ms")
+        },
+    )
+
+    producer = KafkaProducer(
+        **{
+            k: v
+            for k, v in kafka_args.items()
+            if k
+            not in (
+                "group_id",
+                "value_deserializer",
+                "auto_offset_reset",
+                "enable_auto_commit",
+            )
+        }
+    )
+
     # This will run indefinitely, listening for messages
     for message in consumer:
-        result = process_message(message)
+        result = process_message(message, producer)
         log.info(f"Commit the Kafka offset. Result of processing: {result}")
         consumer.commit()

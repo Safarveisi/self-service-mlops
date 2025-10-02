@@ -24,9 +24,7 @@ def run_command(cmd: List[str], timeout_seconds: int, env: dict | None = None) -
     """
     Runs the specified command. If it exits with non-zero status, `RuntimeError` is raised.
     """
-    proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env
-    )
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     timer = Timer(timeout_seconds, proc.kill)
     try:
         timer.start()

@@ -15,9 +15,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 APP_NAME = os.getenv("APP_NAME", "mlflow-webhook-handler")
 required = {
     "KAFKA_CLIENT_PASSWORDS": os.getenv("KAFKA_CLIENT_PASSWORDS", ""),
-    "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION": os.getenv(
-        "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION", ""
-    ),
+    "KAFKA_TOPIC_MODEL_PRODUCTION_VERSION": os.getenv("KAFKA_TOPIC_MODEL_PRODUCTION_VERSION", ""),
     "KAFKA_SASL_USERNAME": os.getenv("KAFKA_SASL_USERNAME", ""),
     "KAFKA_BOOTSTRAP": os.getenv("KAFKA_BOOTSTRAP", ""),
 }
@@ -31,9 +29,7 @@ class SetModelVersionTagPayload(BaseModel):
     key: str = Field(..., description="Tag key")
     value: str = Field(..., description="Tag value")
     run_id: Optional[str] = Field(None, description="Associated MLflow run ID")
-    experiment_id: Optional[str] = Field(
-        None, description="Associated MLflow experiment ID"
-    )
+    experiment_id: Optional[str] = Field(None, description="Associated MLflow experiment ID")
 
 
 @asynccontextmanager
@@ -99,9 +95,7 @@ async def mlflow_webhook(request: Request) -> JSONResponse:
         "Producing message to Kafka topic %s",
         required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"],
     )
-    future = producer.send(
-        required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"], payload.model_dump()
-    )
+    future = producer.send(required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"], payload.model_dump())
     # If you want non-blocking, remove .get(); here we wait up to 10s like your snippet.
     metadata = future.get(timeout=10)
     log.info(
