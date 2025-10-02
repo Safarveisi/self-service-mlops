@@ -4,7 +4,8 @@ version = "0.1.0"
 description = ""
 authors = [
     { name = "Safarveisi", email = "sajad.safarveisi@gmail.com" },
-    { name = "Milad Norouzi", email = "infraartists@gmail.com" }
+    { name = "Milad Norouzi", email = "infraartists@gmail.com" },
+    { name = "Fatemeh Nikan", email = "fatemeh.nikan@gmail.com" }
 ]
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
@@ -17,7 +18,7 @@ package-mode = false
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 required-version = "0.13.2"
 force-exclude = true
 extend-include = ["*.ipynb"]
