@@ -47,7 +47,6 @@ def import_module(monkeypatch):
     """
     # We cannot set builtins in the module; instead, patch in its import path
     # Do a first lightweight import to locate the package name if needed.
-    # Here we assume the file is promote_to_production.py at repo root.
     import mlops_platform.kafka_connector_consumer as mod
 
     return mod
