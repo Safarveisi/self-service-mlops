@@ -45,7 +45,7 @@ spec:
       storageUri: s3://${S3_BUCKET_NAME}/${MLFLOW_ROOT_PREFIX}/${MLFLOW_EXPERIMENT_ID}/${MLFLOW_RUN_ID}/artifacts/estimator
       resources: # Resources for each replica
         limits:
-          cpu: "3"
+          cpu: "3" # You can change these via the endpoint configuration located in the artifact's s3 path
           memory: "5Gi"
         requests:
           cpu: "3"
