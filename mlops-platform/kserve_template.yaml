@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: s3creds
-  namespace: default
+  namespace: default # Change this to a designated namespace
   annotations:
      serving.kserve.io/s3-endpoint: ${S3_HOST}
      serving.kserve.io/s3-usehttps: "1"

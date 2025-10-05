@@ -6,9 +6,21 @@ on:
       - master
     paths:
       - 'mlops-platform/**'
+
+permissions:
+  contents: read # access to check out code and install dependencies
+
 jobs:
   test-components:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+      # Ensure tests can import local package
+      PYTHONPATH: ${{ github.workspace }}/mlops-platform
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -16,22 +28,23 @@ jobs:
       - name: Get required Python version
         id: get-python-version
         run: |
-          required_python_version=$(./run.sh get_required_python_version)
-          echo "required_python_version=$required_python_version" >> $GITHUB_OUTPUT
-          echo "Required Python version: $required_python_version"
+          required_python_version="$(./run.sh get_required_python_version)"
+          if [[ -z "${required_python_version}" ]]; then
+            echo "Could not determine Python version; defaulting to 3.11"
+            required_python_version="3.11"
+          fi
+          echo "required_python_version=${required_python_version}" >> "$GITHUB_OUTPUT"
+          echo "Using Python ${required_python_version}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '${{ steps.get-python-version.outputs.required_python_version }}'
-
-      - name: Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          cache: 'pip'
+          cache-dependency-path: |
+            - dev/requirements.txt
+            - pyproject.toml
+            - poetry.lock
 
       - name: Install dev dependencies
         run: |
@@ -40,5 +53,4 @@ jobs:
 
       - name: Run tests
         run: |
-          export PYTHONPATH=$PYTHONPATH:$(pwd)/mlops-platform
           pytest tests/
