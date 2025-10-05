@@ -1,3 +1,5 @@
+# This RoleBinding is needed to create k8s
+# resources from within a pod in the cluster
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
