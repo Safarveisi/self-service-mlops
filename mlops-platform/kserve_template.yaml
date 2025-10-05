@@ -48,5 +48,5 @@ spec:
           cpu: "3" # You can change these via the endpoint configuration located in the artifact's s3 path
           memory: "5Gi"
         requests:
-          cpu: "3"
+          cpu: "3" # Same here
           memory: "5Gi"
