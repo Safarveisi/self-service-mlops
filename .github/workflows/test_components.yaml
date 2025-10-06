@@ -6,6 +6,10 @@ on:
       - master
     paths:
       - 'mlops-platform/**'
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+        - 'mlops-platform/**'
 
 permissions:
   contents: read # access to check out code and install dependencies
@@ -119,7 +123,8 @@ jobs:
           }
 
           echo "Smoke test PASSED for $IMG_TAG_TEST"
-      - name: Build and push
+      - name: Final build and push
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
           IMG_TAG="ciaa/mlops-comps:${{ needs.get-project-version.outputs.project_version }}"
           # Build and push the image to Docker Hub
