@@ -20,6 +20,13 @@ def env(monkeypatch):
     monkeypatch.setenv("S3_REGION_NAME", "eu-central-1")
 
 
+# Provide dummy API classes so any instantiation succeeds
+class DummyApi:
+    def __getattr__(self, name):
+        # Any method call will be a harmless lambda
+        return lambda *a, **k: None
+
+
 @pytest.fixture(autouse=True)
 def mock_kubernetes(monkeypatch):
     # Import the real package names to patch their attributes
@@ -29,12 +36,6 @@ def mock_kubernetes(monkeypatch):
     # No-op both config loaders (so import-time calls don't explode)
     monkeypatch.setattr(kconf, "load_incluster_config", lambda *a, **k: None, raising=True)
     monkeypatch.setattr(kconf, "load_kube_config", lambda *a, **k: None, raising=True)
-
-    # Provide dummy API classes so any instantiation succeeds
-    class DummyApi:
-        def __getattr__(self, name):
-            # Any method call will be a harmless lambda
-            return lambda *a, **k: None
 
     monkeypatch.setattr(kclient, "CoreV1Api", lambda *a, **k: DummyApi(), raising=True)
     monkeypatch.setattr(kclient, "CustomObjectsApi", lambda *a, **k: DummyApi(), raising=True)
@@ -47,7 +48,7 @@ def import_module(monkeypatch):
     """
     # We cannot set builtins in the module; instead, patch in its import path
     # Do a first lightweight import to locate the package name if needed.
-    import mlops_platform.kafka_connector_consumer as mod
+    import kafka_connector_consumer as mod
 
     return mod
 
@@ -69,19 +70,17 @@ def test_prepare_packed_conda_env_happy_path(monkeypatch):
     removed = []
     monkeypatch.setattr(mod.os, "remove", lambda p: removed.append(p))
 
+    s3 = Mock()
+
     # Execute
-    mod.prepare_packed_conda_env("69", "abcdef")
+    mod.prepare_packed_conda_env(s3, "69", "abcdef")
 
     # Assert the expected external commands were invoked in order
     cmd_seq = [c[0] for c in calls]
-    # 1) s3cmd get conda.yaml
-    assert any(cmd[0] == "s3cmd" and "get" in cmd for cmd in cmd_seq)
-    # 2) conda env create
+    # 1) conda env create
     assert any(cmd[:3] == ("conda", "env", "create") for cmd in cmd_seq)
-    # 3) conda-pack
+    # 2) conda-pack
     assert any(cmd[0] == "conda-pack" for cmd in cmd_seq)
-    # 4) s3cmd put environment.tar.gz
-    assert any(cmd[0] == "s3cmd" and "put" in cmd for cmd in cmd_seq)
 
     # Cleanup should remove the two local files
     assert sorted(removed) == ["conda.yaml", "environment.tar.gz"]
@@ -93,9 +92,7 @@ def test_process_message_happy_path(monkeypatch):
     # Stub out the external command runner & file removals
     monkeypatch.setattr(mod, "run_command", lambda *a, **k: 0)
     monkeypatch.setattr(mod.os, "remove", lambda p: None)
-
-    # Optionally, short-circuit the whole env pack step:
-    # monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: None)
+    monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: "success")
 
     # Fake endpoint creator behavior
     cme = Mock()
@@ -105,6 +102,7 @@ def test_process_message_happy_path(monkeypatch):
 
     # Fake producer
     producer = Mock()
+    s3 = Mock()
 
     # Message & env copy
     msg = types.SimpleNamespace(value={"experiment_id": "69", "run_id": "abcdef"})
@@ -113,6 +111,7 @@ def test_process_message_happy_path(monkeypatch):
     status = mod.process_message(
         msg,
         producer,
+        s3,
         create_model_endpoint=cme,
         required_env=env_copy,
     )
@@ -135,10 +134,12 @@ def test_process_message_skips_when_missing_ids(monkeypatch):
     # Mocks to ensure nothing heavy is called
     cme = Mock()
     producer = Mock()
+    s3 = Mock()
 
     status = mod.process_message(
         message,
         producer,
+        s3,
         create_model_endpoint=cme,
         required_env=mod.required.copy(),  # pass a copy to avoid mutating global
     )
@@ -155,6 +156,7 @@ def test_process_message_timeout_path(monkeypatch):
     # Stub out the external command runner & file removals
     monkeypatch.setattr(mod, "run_command", lambda *a, **k: 0)
     monkeypatch.setattr(mod.os, "remove", lambda p: None)
+    monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: "success")
 
     cme = Mock()
     cme.fill_k8s_resource_template.return_value = "yaml"
@@ -163,12 +165,14 @@ def test_process_message_timeout_path(monkeypatch):
     cme.check_k8s_pods_running.return_value = False
 
     producer = Mock()
+    s3 = Mock()
 
     msg = types.SimpleNamespace(value={"experiment_id": "69", "run_id": "abcdef"})
 
     status = mod.process_message(
         msg,
         producer,
+        s3,
         create_model_endpoint=cme,
         required_env=mod.required.copy(),
         timeout_seconds=5,  # shorten to keep test quick
@@ -176,4 +180,28 @@ def test_process_message_timeout_path(monkeypatch):
     )
 
     assert status == "timeout"
+    producer.send.assert_not_called()
+
+
+def test_process_message_prepare_conda_env_skipped(monkeypatch):
+    import kafka_connector_consumer as mod
+
+    # Stub out the external command runner & file removals
+    monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: "failed")
+
+    cme = Mock()
+    producer = Mock()
+    s3 = Mock()
+
+    msg = types.SimpleNamespace(value={"experiment_id": "69", "run_id": "abcdef"})
+
+    status = mod.process_message(
+        msg,
+        producer,
+        s3,
+        create_model_endpoint=cme,
+        required_env=mod.required.copy(),
+    )
+
+    assert status == "skipped"
     producer.send.assert_not_called()

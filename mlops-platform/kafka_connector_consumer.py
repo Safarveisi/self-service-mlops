@@ -2,6 +2,9 @@ import json
 import os
 import time
 
+import boto3
+import botocore
+from boto3.resources.factory import ServiceResource
 from kafka import KafkaConsumer, KafkaProducer
 from model_endpoint import CreateModelEndpoint
 from utils import get_logger, run_command
@@ -10,7 +13,6 @@ log = get_logger()
 
 RETRY_INTERVAL_SECONDS = 5  # Interval between checks for pod status
 TIMEOUT_SECONDS = 300  # Timeout for waiting for pods to be in 'Running' state
-CREATE_MODEL_ENDPOINT = CreateModelEndpoint()
 
 required = {
     "KAFKA_CLIENT_PASSWORDS": os.getenv("KAFKA_CLIENT_PASSWORDS", ""),
@@ -47,27 +49,17 @@ if missing:
     raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
 
 
-def prepare_packed_conda_env(experiment_id: str, run_id: str) -> None:
-    log.info("Packing conda env for exp=%s run=%s", experiment_id, run_id)
-    s3_base = [
-        "s3cmd",
-        f"--access_key={required['S3_ACCESS_KEY']}",
-        f"--secret_key={required['S3_SECRET_KEY']}",
-        f"--host-bucket=%(bucket)s.{required['S3_HOST']}",
-        f"--region={required['S3_REGION_NAME']}",
-    ]
+def prepare_packed_conda_env(s3: ServiceResource, experiment_id: str, run_id: str) -> str:
+    log.info("Preparing conda env for exp=%s run=%s", experiment_id, run_id)
 
-    s3url_conda = (
-        f"s3://{required['S3_BUCKET_NAME']}/{required['MLFLOW_ROOT_PREFIX']}/"
-        f"{experiment_id}/{run_id}/artifacts/estimator/conda.yaml"
+    s3key_conda = (
+        f"{required['MLFLOW_ROOT_PREFIX']}/{experiment_id}/{run_id}/artifacts/estimator/conda.yaml"
     )
 
-    s3url_env = (
-        f"s3://{required['S3_BUCKET_NAME']}/{required['MLFLOW_ROOT_PREFIX']}/"
-        f"{experiment_id}/{run_id}/artifacts/estimator/environment.tar.gz"
+    s3key_env = (
+        f"{required['MLFLOW_ROOT_PREFIX']}/{experiment_id}/{run_id}/artifacts/"
+        "estimator/environment.tar.gz"
     )
-
-    get_conda_yaml = s3_base + ["get", "--skip-existing", s3url_conda]
     create_conda_env = ["conda", "env", "create", "--file=conda.yaml"]
     pack_conda_env = [
         "conda-pack",
@@ -76,38 +68,47 @@ def prepare_packed_conda_env(experiment_id: str, run_id: str) -> None:
         "-o",
         "environment.tar.gz",
     ]
-    put_packed_env = s3_base + ["put", "environment.tar.gz", s3url_env]
 
-    log.info("Downloading conda.yaml from %s", s3url_conda)
-    run_command(
-        get_conda_yaml, timeout_seconds=10
-    )  # Given that conda.yaml is very small in size, 10 seconds should be more than enough
+    try:
+        log.info("Downloading conda.yaml from %s", s3key_conda)
+        s3.Bucket(required["S3_BUCKET_NAME"]).download_file(s3key_conda, "conda.yaml")
+        log.info("Downloaded conda.yaml file")
 
-    log.info("Creating conda env from conda.yaml")
-    run_command(
-        create_conda_env, timeout_seconds=120
-    )  # Packing the conda env might take a bit longer, so we give it 2 minutes here
+        log.info("Creating conda env from conda.yaml")
+        run_command(
+            create_conda_env, timeout_seconds=120
+        )  # Packing the conda env might take a bit longer, so we give it 2 minutes here
+        log.info("Packing conda env into environment.tar.gz")
+        run_command(
+            pack_conda_env, timeout_seconds=60
+        )  # Packing the conda env should be quick, so 1 minute should be enough
 
-    log.info("Packing conda env into environment.tar.gz")
-    run_command(
-        pack_conda_env, timeout_seconds=60
-    )  # Packing the conda env should be quick, so 1 minute should be enough
-
-    log.info("Uploading packed conda env to %s", s3url_env)
-    run_command(
-        put_packed_env, timeout_seconds=30
-    )  # Uploading the packed env should be quick, so 30 seconds should be enough
-
-    log.info("Done packing conda env. Cleaning up local files.")
-
-    os.remove("conda.yaml")
-    os.remove("environment.tar.gz")
+        log.info("Uploading packed conda env to %s", s3key_env)
+        try:
+            s3.Bucket(required["S3_BUCKET_NAME"]).upload_file("./environment.tar.gz", s3key_env)
+            log.info("Uploaded environment.tar.gz into S3")
+            log.info("Preparing conda env was successful. Cleaning up local files.")
+            os.remove("conda.yaml")
+            os.remove("environment.tar.gz")
+            return "success"
+        except boto3.exceptions.S3UploadFailedError as e:
+            log.error(f"Uploading environment.tar.gz failed: {e}")
+            log.error("Preparing conda env failed")
+            return "failed"
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            log.error("The conda.yaml does not exist")
+        else:
+            log.error("There was an error downloading conda.yaml")
+        log.error("Preparing conda env failed")
+        return "failed"
 
 
 def process_message(
     message: any,
     producer: KafkaProducer,
-    create_model_endpoint: str = CREATE_MODEL_ENDPOINT,
+    s3: ServiceResource,
+    create_model_endpoint: CreateModelEndpoint = CreateModelEndpoint(),
     required_env: dict = required,
     retry_interval_seconds: int = RETRY_INTERVAL_SECONDS,
     timeout_seconds: int = TIMEOUT_SECONDS,
@@ -119,7 +120,10 @@ def process_message(
         log.warning("Skipping message without experiment_id or run_id: %s", message.value)
         return "skipped"
 
-    prepare_packed_conda_env(experiment_id, run_id)
+    result = prepare_packed_conda_env(s3, experiment_id, run_id)
+    if result == "failed":
+        return "skipped"
+
     required_env.update({"MLFLOW_EXPERIMENT_ID": experiment_id, "MLFLOW_RUN_ID": run_id})
 
     log.info("Deploying model for exp=%s run=%s", experiment_id, run_id)
@@ -172,6 +176,22 @@ def process_message(
 
 
 if __name__ == "__main__":
+    session = boto3.Session(
+        region_name=required["S3_REGION_NAME"],
+        aws_access_key_id=required["S3_ACCESS_KEY"],
+        aws_secret_access_key=required["S3_SECRET_KEY"],
+    )
+
+    s3 = session.resource(
+        service_name="s3",
+        endpoint_url=(
+            "http://" + required["S3_HOST"]
+            if not required["S3_HOST"].startswith("http://")
+            else required["S3_HOST"]
+        ),
+        use_ssl=False,
+    )
+
     consumer = KafkaConsumer(
         required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"],
         **{
@@ -197,7 +217,7 @@ if __name__ == "__main__":
 
     # This will run indefinitely, listening for messages
     for message in consumer:
-        result = process_message(message, producer)
+        result = process_message(message, producer, s3)
         log.info(f"Commit the Kafka offset. Result of processing: {result}")
         consumer.commit()
         log.info("Removed message from the Kafka topic")
