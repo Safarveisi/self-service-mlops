@@ -31,12 +31,11 @@ kafka_args = {
     "sasl_plain_password": required["KAFKA_CLIENT_PASSWORDS"],
 }
 
-consumer = KafkaConsumer(
-    required["KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT"],
-    **kafka_args,
-)
-
 if __name__ == "__main__":
+    consumer = KafkaConsumer(
+        required["KAFKA_TOPIC_MODEL_PRODUCTION_ENDPOINT"],
+        **kafka_args,
+    )
     # We can extend the logic here
     for message in consumer:
         inference_service_name = message.value.get("inference_service_name", "")
