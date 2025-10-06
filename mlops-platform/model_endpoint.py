@@ -4,6 +4,9 @@ import yaml
 from kubernetes import client, config
 from kubernetes.client import ApiClient
 from kubernetes.client.exceptions import ApiException
+from utils import get_logger
+
+log = get_logger()
 
 
 class CreateModelEndpoint:
@@ -17,12 +20,17 @@ class CreateModelEndpoint:
         self,
         prefix: str = "iris-classifier",
         namespace: str = "default",
-    ):
+    ) -> bool:
         """
         Returns True if all pods with the specified prefix are in Running state.
         """
         pods = self.core.list_namespaced_pod(namespace).items
-        return all(p.status.phase == "Running" for p in pods if p.metadata.name.startswith(prefix))
+        running_pods = [
+            p.status.phase == "Running" for p in pods if p.metadata.name.startswith(prefix)
+        ]
+        if not pods or len(running_pods) != len(pods):
+            return False
+        return True
 
     def create_resource_on_k8s(self, rendered_yaml: str) -> tuple[str, str]:
         # For convenience, return the name and namespace of the created InferenceService
@@ -56,35 +64,41 @@ class CreateModelEndpoint:
                         name=name,
                         body=doc,
                     )
+                    log.info("Creating kserve inference object was successful")
                 except ApiException as e:
                     if e.status == 404:
                         # Fallback (older servers): create
                         self.crd.create_namespaced_custom_object(
                             group, version, namespace, plural, doc
                         )
+                        log.info("Creating kserve inference object was successful")
                     else:
-                        raise
+                        log.error("Creating kserve inference object failed")
 
             # ---- Core resources: Secret / ServiceAccount (use SSA PATCH) ----
             if api_version == "v1" and kind == "Secret":
                 try:
                     self.core.patch_namespaced_secret(name=name, namespace=namespace, body=doc)
+                    log.info("Creating kserve secret was successful")
                 except ApiException as e:
                     if e.status == 404:
                         self.core.create_namespaced_secret(namespace=namespace, body=doc)
+                        log.info("Creating kserve secret was successful")
                     else:
-                        raise
+                        log.error("Creating kserve secret failed")
 
             if api_version == "v1" and kind == "ServiceAccount":
                 try:
                     self.core.patch_namespaced_service_account(
                         name=name, namespace=namespace, body=doc
                     )
+                    log.info("Creating kserve service account was successful")
                 except ApiException as e:
                     if e.status == 404:
                         self.core.create_namespaced_service_account(namespace=namespace, body=doc)
+                        log.info("Creating kserve service account was successful")
                     else:
-                        raise
+                        log.error("Creating kserve service account failed")
 
         return inference_service_name, inference_service_namespace
 
