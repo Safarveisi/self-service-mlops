@@ -1,20 +1,7 @@
 variable "ionos_token" {
-  description = "Token for ionos"
-  default = "YOUR_TOKEN_HERE" ### CHANGE TO YOUR IONOS TOKEN ###
-}
-
-# variable "username" {
-#   description = "Username for ionos"
-# }
-
-# variable "password" {
-#   description = "Password for the ionos"
-# }
-
-variable "local_user" {
-  description = "local user for running terraform"
-  type        = string
-  default     = "mnorouzi" ### CHANGE TO YOUR LOCAL USER ###
+  description = "Token for ionos cloud"
+  type = string
+  sensitive = true
 }
 
 variable "location" {

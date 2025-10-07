@@ -56,12 +56,14 @@ data "ionoscloud_k8s_cluster" "k8s-self-service-mlops-platform-cluster" {
   depends_on = [ ionoscloud_k8s_node_pool.k8s-self-service-mlops-platform-node_pool ]
   name = var.cluster_name
 }
-resource "local_file" "kubeconfig" {
-  content  = data.ionoscloud_k8s_cluster.k8s-self-service-mlops-platform-cluster.kube_config
-  filename = "/home/${var.local_user}/.kube/ionos_kubeconf.yaml"
+resource "local_sensitive_file" "kubeconfig" {
+  content              = data.ionoscloud_k8s_cluster.k8s-self-service-mlops-platform-cluster.kube_config
+  filename             = pathexpand("~/.kube/config")  # expands to $HOME or %USERPROFILE%
+  file_permission      = "0600"
+  directory_permission = "0700"  # creates ~/.kube if missing with this mode
 }
 
 output "kubeConfig_location" {
   value = "*** Your kuberenets config file store in ~/.kube directory with name ionos_kubeconf.yaml ***"
+  sensitive   = true
 }
-
