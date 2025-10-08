@@ -25,12 +25,12 @@ class CreateModelEndpoint:
         Returns True if all pods with the specified prefix are in Running state.
         """
         pods = self.core.list_namespaced_pod(namespace).items
-        running_pods = [
+        kserve_running_pods = [
             p.status.phase == "Running" for p in pods if p.metadata.name.startswith(prefix)
         ]
-        if not pods or len(running_pods) != len(pods):
-            return False
-        return True
+        if kserve_running_pods and all(kserve_running_pods):
+            return True
+        return False
 
     def create_resource_on_k8s(self, rendered_yaml: str) -> tuple[str, str]:
         # For convenience, return the name and namespace of the created InferenceService
