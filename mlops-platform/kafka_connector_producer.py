@@ -74,7 +74,7 @@ async def healthz() -> dict:
     return {"status": "ok", "app": APP_NAME}
 
 
-@app.post("/webhook/mlflow")
+@app.post("/push")
 async def mlflow_webhook(request: Request) -> JSONResponse:
     """
     Receives MLflow webhook POSTs and publishes the payload to Kafka.

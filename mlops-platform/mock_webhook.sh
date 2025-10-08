@@ -4,7 +4,7 @@
 # Prequisites: Make srue the K8s port-forwarding is running
 # kubectl -n kafka port-forward svc/webhook-handler 8080:80
 
-curl -i -X POST http://localhost:8080/webhook/mlflow \
+curl -i -X POST http://self-service-mlops.mlflow-webhook.com:80/mlflow/webhook/push \
   -H "Content-Type: application/json" \
   --data '{
     "name": "example_model",

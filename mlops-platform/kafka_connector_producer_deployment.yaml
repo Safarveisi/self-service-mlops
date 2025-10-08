@@ -18,7 +18,7 @@ spec:
         runAsUser: 1001
       containers:
         - name: producer
-          image: ciaa/kafka-connector:v0.2.0 # LATEST_IMAGE_TAG
+          image: ciaa/mlops-comps:v0.2.0 # LATEST_IMAGE_TAG
           command: ["python", "kafka_connector_producer.py"]
           imagePullPolicy: Always
           env:
@@ -72,6 +72,28 @@ spec:
     app: webhook-handler
   ports:
     - name: http
-      port: 80
-      targetPort: http
+      port: 8080
+      targetPort: 8080
   type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-kafka-producer
+  namespace: kafka
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: self-service-mlops.mlflow-webhook.com
+    http:
+      paths:
+      - path: /mlflow/webhook(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: webhook-handler
+            port:
+              number: 8080
