@@ -128,6 +128,8 @@ def process_message(
 
     log.info("Deploying model for exp=%s run=%s", experiment_id, run_id)
     rendered_yaml = create_model_endpoint.fill_k8s_resource_template(required_env)
+    if rendered_yaml is None:
+        return "skipped"
 
     log.info("Deploying to Kubernetes and creating an endpoint")
     inference_service_name, inference_service_namespace = (

@@ -47,7 +47,7 @@ class CreateModelEndpoint:
             namespace = meta.get("namespace", "default")
             name = meta.get("name")
 
-            # ---- KServe CRD: InferenceService (use SSA PATCH) ----
+            # KServe CRD: InferenceService (use SSA PATCH) ----
             if api_version.startswith("serving.kserve.io/") and kind.lower() == "inferenceservice":
                 group = "serving.kserve.io"
                 version = api_version.split("/", 1)[1]  # e.g., v1beta1
@@ -75,7 +75,7 @@ class CreateModelEndpoint:
                     else:
                         log.error("Creating kserve inference object failed")
 
-            # ---- Core resources: Secret / ServiceAccount (use SSA PATCH) ----
+            # Core resources: Secret / ServiceAccount (use SSA PATCH) ----
             if api_version == "v1" and kind == "Secret":
                 try:
                     self.core.patch_namespaced_secret(name=name, namespace=namespace, body=doc)
@@ -103,8 +103,11 @@ class CreateModelEndpoint:
         return inference_service_name, inference_service_namespace
 
     @staticmethod
-    def fill_k8s_resource_template(values: dict) -> str:
+    def fill_k8s_resource_template(values: dict) -> str | None:
         with open("kserve_template.yaml", encoding="utf-8") as f:
             tpl = Template(f.read())
-
-        return tpl.substitute(values)  # raises KeyError if any placeholder missing
+        try:
+            return tpl.substitute(values)  # raises KeyError if any placeholder missing
+        except KeyError:
+            log.error("Some attributes were missing while trying to fill Kserve template!")
+            return
