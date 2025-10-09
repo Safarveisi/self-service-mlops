@@ -121,6 +121,11 @@ jobs:
           }
 
           echo "Smoke test PASSED for $IMG_TAG_TEST"
+      - name: Get the docker image size (human readable)
+        run: |
+          IMG_SIZE=$(docker inspect -f "{{ .Size }}" "$IMG_TAG_TEST" | numfmt --to=si)
+          echo "Docker image size: $IMG_SIZE"
+
       - name: Final build and push
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
