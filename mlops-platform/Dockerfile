@@ -32,8 +32,8 @@ ENV PATH="/home/app/miniconda3/bin:/home/app/.local/bin:${PATH}"
 COPY --chown=app:app . ./
 
 # Update conda and install python dependencies using conda
-RUN conda update -n base -c defaults conda \
-    && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main \
     && conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r \
+    && conda update -n base -c defaults conda \
     && conda install -y -c conda-forge conda-pack \
     && conda install -y -c conda-forge --file requirements.txt
