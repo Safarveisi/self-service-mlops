@@ -104,8 +104,11 @@ jobs:
           docker buildx build --check .
 
       - name: Local image smoke test (build & create container)
+        id: smoke-test
         run: |
           IMG_TAG_TEST="ciaa/mlops-comps:${{ needs.get-project-version.outputs.project_version }}-test"
+          # Register as an output for this step
+          echo "IMG_TAG_TEST=$IMG_TAG_TEST" >> $GITHUB_OUTPUT
 
           # Build locally (loads the single-platform build result to docker images)
           echo "Build test image"
@@ -123,12 +126,14 @@ jobs:
           echo "Smoke test PASSED for $IMG_TAG_TEST"
       - name: Get the docker image size (human readable)
         run: |
+          IMG_TAG_TEST=${{ steps.smoke-test.outputs.IMG_TAG_TEST }}
           IMG_SIZE=$(docker inspect -f "{{ .Size }}" "$IMG_TAG_TEST" | numfmt --to=si)
           echo "Docker image size: $IMG_SIZE"
 
       - name: Final build and push
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
-          IMG_TAG="ciaa/mlops-comps:${{ needs.get-project-version.outputs.project_version }}"
+          # Drop the test flag from the tag
+          IMG_TAG=$(echo "${{ steps.smoke-test.outputs.IMG_TAG_TEST }}" | sed 's/-test$//')
           # Build and push the image to Docker Hub
           docker buildx build --platform linux/amd64 --attest=type=provenance,mode=max --attest=type=sbom --tag "$IMG_TAG" --push .
