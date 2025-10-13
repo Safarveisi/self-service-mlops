@@ -1,3 +1,7 @@
+"""
+Some helper functions
+"""
+
 import logging
 import subprocess
 import sys

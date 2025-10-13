@@ -1,3 +1,12 @@
+"""
+This is where we define an API with appropriate endpoints for
+receiving webhooks from MLflow. Each webhook payload
+contains the specifications of a model to be deployed
+using KServe on Kubernetes. The received specification is
+then published to a Kafka topic, where it is
+consumed by another component in the platform.
+"""
+
 import json
 import os
 from contextlib import asynccontextmanager

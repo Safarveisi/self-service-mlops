@@ -1,3 +1,8 @@
+"""
+A custom class designed to simplify the creation
+of resources in Kubernetes.
+"""
+
 from string import Template
 
 import yaml

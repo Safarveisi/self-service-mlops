@@ -59,26 +59,33 @@ jobs:
         run: |
           pytest tests/
 
-  get-project-version:
-    runs-on: ubuntu-latest
-    outputs:
-        project_version: ${{ steps.project-version.outputs.project_version }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+  check-git-tag-exists:
+      runs-on: ubuntu-latest
+      outputs:
+          project_version: ${{ steps.get-project-version.outputs.project_version }}
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+          with:
+            fetch-depth: 0
 
-      - name: Extract package version from pyproject.toml
-        id: project-version
-        run: |
-          project_version=$(./run.sh get_project_version)
-          echo "project_version=$project_version" >> $GITHUB_OUTPUT
-          echo "Project version: $project_version"
+        - name: Extract package version from pyproject.toml
+          id: get-project-version
+          run: |
+            project_version=$(./run.sh get_project_version)
+            echo "project_version=$project_version" >> $GITHUB_OUTPUT
+            echo "Project version: $project_version"
+
+        - name: Check for existing tag
+          run: |
+            # This will fail in case the git tag already exists
+            git tag ${{ steps.get-project-version.outputs.project_version }}
 
   build-docker-image-and-push-to-registry:
     runs-on: ubuntu-latest
     needs:
       - test-components
-      - get-project-version
+      - check-git-tag-exists
     defaults:
       run:
         working-directory: ./mlops-platform
@@ -104,34 +111,90 @@ jobs:
           docker buildx build --check .
 
       - name: Local image smoke test (build & create container)
+        continue-on-error: true
         id: smoke-test
         run: |
-          IMG_TAG_TEST="ciaa/mlops-comps:${{ needs.get-project-version.outputs.project_version }}-test"
+          img_tag_test="ciaa/mlops-comps:${{ needs.check-git-tag-exists.outputs.project_version }}-test"
           # Register as an output for this step
-          echo "IMG_TAG_TEST=$IMG_TAG_TEST" >> $GITHUB_OUTPUT
+          echo "img_tag_test=$img_tag_test" >> $GITHUB_OUTPUT
 
           # Build locally (loads the single-platform build result to docker images)
           echo "Build test image"
-          docker buildx build --platform linux/amd64 --load --tag "$IMG_TAG_TEST" .
+          stdout=$(docker buildx build --platform linux/amd64 --load --tag "$img_tag_test" . 2>&1)
+          # Save full stdout
+          echo "stdout<<EOF" >> $GITHUB_OUTPUT
+          echo "$stdout" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
           SMOKE_CMD="import sys; print('ok'); sys.exit(0)"
-
           echo "Run smoke command"
-          docker run --rm --entrypoint python "$IMG_TAG_TEST" \
+          docker run --rm --entrypoint python "$img_tag_test" \
            -c "$SMOKE_CMD" || {
-              echo "Smoke test FAILED for $IMG_TAG_TEST"
+              echo "Smoke test FAILED for $img_tag_test"
               exit 1
           }
-          echo "Smoke test PASSED for $IMG_TAG_TEST"
+          echo "Smoke test PASSED for $img_tag_test"
 
           # Get the docker image size (human readable)
-          IMG_SIZE=$(docker inspect -f "{{ .Size }}" "$IMG_TAG_TEST" | numfmt --to=si)
-          echo "Docker image size: $IMG_SIZE"
+          img_size=$(docker inspect -f "{{ .Size }}" "$img_tag_test" | numfmt --to=si)
+          echo "Docker image size: $img_size"
+
+      - uses: actions/github-script@v7
+        name: Write the docker build logs as a comment
+        if: github.event_name == 'pull_request'
+        env:
+          BUILD: "docker\n${{ steps.smoke-test.outputs.stdout }}"
+        with:
+          github-token: ${{ secrets.GIT_FG_TOKEN }}
+          script: |
+            const output = `#### Docker build and smoke test ⚙️ \`${{ steps.smoke-test.outcome }}\`
+
+            <details>
+            <summary>Show docker build logs</summary>
+
+            \`\`\`
+            ${process.env.BUILD}
+            \`\`\`
+
+            </details>
+
+            *Pusher: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+            })
+
+      - name: Smoke test status
+        if: steps.smoke-test.outcome == 'failure'
+        run: exit 1
 
       - name: Final build and push
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: |
           # Drop the test flag from the tag
-          IMG_TAG=$(echo "${{ steps.smoke-test.outputs.IMG_TAG_TEST }}" | sed 's/-test$//')
+          img_tag=$(echo "${{ steps.smoke-test.outputs.img_tag_test }}" | sed 's/-test$//')
           # Build and push the image to Docker Hub
-          docker buildx build --platform linux/amd64 --attest=type=provenance,mode=max --attest=type=sbom --tag "$IMG_TAG" --push .
+          docker buildx build --platform linux/amd64 --attest=type=provenance,mode=max --attest=type=sbom --tag "$img_tag" --push .
+
+  create-git-tag:
+      runs-on: ubuntu-latest
+      needs: [build-docker-image-and-push-to-registry, check-git-tag-exists]
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4
+
+        - name: Push the tag
+          uses: actions/github-script@v7
+          with:
+            github-token: ${{ secrets.GIT_FG_TOKEN }}
+            script: |
+                github.rest.git.createRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: 'refs/tags/${{ needs.check-git-tag-exists.outputs.project_version }}',
+                    sha: context.sha
+                })

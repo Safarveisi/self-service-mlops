@@ -1,3 +1,10 @@
+"""
+This is where we consume a Kafka topic that contains
+the specifications of models to be deployed using KServe.
+Using these specifications, we adjust the models' artifact
+paths on S3 before finalizing the deployment.
+"""
+
 import json
 import os
 import time
