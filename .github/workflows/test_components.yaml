@@ -24,6 +24,7 @@ jobs:
       PYTHONUNBUFFERED: "1"
       # Ensure tests can import local package
       PYTHONPATH: ${{ github.workspace }}/mlops-platform
+      PIP_ROOT_USER_ACTION: "ignore"
 
     steps:
       - name: Checkout repository
