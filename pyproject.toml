@@ -1,6 +1,6 @@
 [project]
 name = "self-service-mlops"
-version = "0.5.0"
+version = "0.1.0"
 description = ""
 authors = [
     { name = "Safarveisi", email = "sajad.safarveisi@gmail.com" },
