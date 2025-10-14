@@ -7,7 +7,7 @@ metadata:
   annotations:
      serving.kserve.io/s3-endpoint: ${S3_HOST} # This is an environment variable
      serving.kserve.io/s3-usehttps: "1"
-     serving.kserve.io/s3-region: ${S3_REGION_NAME}
+     serving.kserve.io/s3-region: ${S3_REGION_NAME} # The same here
      serving.kserve.io/s3-useanoncredential: "false"
 type: Opaque
 stringData:
