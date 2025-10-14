@@ -74,3 +74,7 @@ kubectl apply --server-side -f https://github.com/kserve/kserve/releases/downloa
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `model-endpoint/` | Sample inference client and payloads to exercise a KServe InferenceService. After deploying your model, `cd model-endpoint` and run the provided script (e.g., `prediction`) to send a test request and print the prediction.      |
 | `mlops-platform/`       | Cluster/platform-level scaffolding and configuration that supports the self-service MLOps setup (base manifests, operators, helper assets). Use this to organize reusable, cluster-wide components independent of specific models. |
+
+### Code quality (linting, static code checks, and formatting)
+
+We use [pre-commit hooks](https://pre-commit.com/#install) to maintain code quality before any Git commit. Please ensure that pre-commit hooks are installed and active before contributing.
