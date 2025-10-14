@@ -3,13 +3,8 @@
 STARTING_PATH=$(git rev-parse --show-toplevel)
 IDENTIFIER_COMMENT="# LATEST_IMAGE_TAG"
 
-
-function get_required_python_version {
-    cat pyproject.toml | grep -oE 'requires-python = ">=([0-9]+\.[0-9]+)' | sed 's/.*">=//'
-}
-
 function get_project_version {
-    echo "v$(cat pyproject.toml | grep '^version =' | sed -E 's/version = //' | tr -d '"=')"
+    echo "v$(cat $STARTING_PATH/pyproject.toml | grep '^version =' | sed -E 's/version = //' | tr -d '"=')"
 }
 
 function update_docker_image_tag {

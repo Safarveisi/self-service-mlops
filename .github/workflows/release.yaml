@@ -30,21 +30,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get required Python version
+      - name: Get the required python version for the project
+        uses: ./.github/actions/get-project-python-version
         id: get-python-version
-        run: |
-          required_python_version="$(./run.sh get_required_python_version)"
-          if [[ -z "${required_python_version}" ]]; then
-            echo "Could not determine Python version; defaulting to 3.11"
-            required_python_version="3.11"
-          fi
-          echo "required_python_version=${required_python_version}" >> "$GITHUB_OUTPUT"
-          echo "Using Python ${required_python_version}"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '${{ steps.get-python-version.outputs.required_python_version }}'
+          python-version: '${{ steps.get-python-version.outputs.required-python-version }}'
           cache: 'pip'
           cache-dependency-path: |
             - dev/requirements.txt
@@ -116,10 +109,10 @@ jobs:
         id: smoke-test
         run: |
           img_tag_test="ciaa/mlops-comps:${{ needs.check-git-tag-exists.outputs.project_version }}-test"
+          echo "Tag for the test image: $img_tag_test"
           # Register as an output for this step
           echo "img_tag_test=$img_tag_test" >> $GITHUB_OUTPUT
 
-          # Build locally (loads the single-platform build result to docker images)
           echo "Build test image"
           stdout=$(docker buildx build --platform linux/amd64 --load --tag "$img_tag_test" . 2>&1)
           # Save full stdout

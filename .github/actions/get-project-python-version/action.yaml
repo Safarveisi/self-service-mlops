@@ -1,0 +1,16 @@
+name: 'Get Project Python Version'
+description: 'Gets the minimum Python version from pyproject.toml'
+outputs:
+  required-python-version:
+    description: "Python version in pyproject.toml"
+    value: ${{ steps.python-version-extractor.outputs.required_python_version }}
+runs:
+  using: "composite"
+  steps:
+    - name: Get the minimum python version
+      id: python-version-extractor
+      run: |
+        required_python_version=$(cat ${{ github.workspace }}/pyproject.toml | grep -oE 'requires-python = ">=([0-9]+\.[0-9]+)' | sed 's/.*">=//')
+        echo "Project's python version: $required_python_version"
+        echo "required_python_version=$required_python_version" >> $GITHUB_OUTPUT
+      shell: bash
