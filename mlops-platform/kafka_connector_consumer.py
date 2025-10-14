@@ -18,8 +18,8 @@ from utils import get_logger, run_command
 
 log = get_logger()
 
-RETRY_INTERVAL_SECONDS = 5  # Interval between checks for pod status
-TIMEOUT_SECONDS = 300  # Timeout for waiting for pods to be in 'Running' state
+RETRY_INTERVAL_SECONDS = 10  # Interval between checks for pod status
+TIMEOUT_SECONDS = 600  # Timeout for waiting for pods to be in 'Running' state
 
 required = {
     "KAFKA_CLIENT_PASSWORDS": os.getenv("KAFKA_CLIENT_PASSWORDS", ""),
