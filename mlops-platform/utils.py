@@ -10,16 +10,16 @@ from threading import Timer
 
 def get_logger(name: str = "myapp") -> logging.Logger:
     logger = logging.getLogger(name)
-    if logger.handlers:  # avoid duplicate handlers on reload
+    if logger.handlers:  # Avoid duplicate handlers on reload
         return logger
     logger.setLevel(logging.INFO)
 
     h = logging.StreamHandler(sys.stderr)
     h.setLevel(logging.INFO)
-    h.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
 
     logger.addHandler(h)
-    logger.propagate = False  # <- don't bubble to root (prevents other libs)
+    logger.propagate = False  # Don't bubble to root (prevents other libs)
     return logger
 
 

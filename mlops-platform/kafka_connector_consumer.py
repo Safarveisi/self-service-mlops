@@ -11,6 +11,7 @@ import time
 
 import boto3
 import botocore
+import yaml
 from boto3.resources.factory import ServiceResource
 from kafka import KafkaConsumer, KafkaProducer
 from model_endpoint import CreateModelEndpoint
@@ -33,6 +34,12 @@ required = {
     "S3_ACCESS_KEY": os.getenv("S3_ACCESS_KEY", ""),
     "S3_SECRET_KEY": os.getenv("S3_SECRET_KEY", ""),
     "S3_REGION_NAME": os.getenv("S3_REGION_NAME", ""),
+    "MLFLOW_EXPERIMENT_ID": "1",
+    "MLFLOW_RUN_ID": "abcd1234efgh5678",
+    "CPU_COUNT": "3",  # Or 2500m (fractional CPUs)
+    "MEMORY": "3Gi",  # Or 3000Mi
+    "MAX_REPLICAS": 3,  # Number of k8s pods for the inference service
+    "CONCURRENCY": 5,  # Number of requests per pod
 }
 
 kafka_args = {
@@ -54,6 +61,80 @@ missing = [k for k, v in required.items() if not v]
 
 if missing:
     raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
+
+
+def validate_endpoint_config(config: dict) -> bool:
+    """
+    Validate the model endpoint configuration dictionary
+    structure and types. Returns True if valid, False otherwise.
+    Logs errors instead of raising exceptions.
+    """
+    schema = {"concurrency": int, "max_replicas": int, "cpu": str, "memory": str}
+
+    def _validate(data, spec, path="root"):
+        if not isinstance(data, dict):
+            log.error(f"{path} must be a dictionary")
+            return False
+
+        for key, expected in spec.items():
+            full_path = f"{path}.{key}"
+            if key not in data:
+                log.error(f"Missing key: {full_path}")
+                return False
+
+            value = data[key]
+            if not isinstance(value, expected):
+                log.error(
+                    f"Invalid type for {full_path}: expected {expected.__name__},"
+                    f" got {type(value).__name__}"
+                )
+                return False
+
+        return True
+
+    is_valid = _validate(config, schema)
+
+    if is_valid:
+        log.info("Endpoint configuration is valid")
+    else:
+        log.warning("Endpoint configuration validation failed")
+
+    return is_valid
+
+
+def get_model_endpoint_configuration(
+    s3: ServiceResource, experiment_id: str, run_id: str
+) -> dict | None:
+    s3key_endpoint_conf = (
+        f"{required['MLFLOW_ROOT_PREFIX']}/{experiment_id}/{run_id}/"
+        "artifacts/estimator/endpoint_conf.yaml"
+    )
+    YAML_FILE = "endpoint_conf.yaml"
+
+    try:
+        log.info("Getting model endpoint configuration from s3")
+        s3.Bucket(required["S3_BUCKET_NAME"]).download_file(s3key_endpoint_conf, YAML_FILE)
+        log.info(f"Downloaded '{YAML_FILE}' file")
+        try:
+            with open(YAML_FILE, encoding="tf-8") as f:
+                try:
+                    config = yaml.safe_load(f)
+                    if config is None:
+                        log.warning(f"YAML file '{YAML_FILE}' is empty")
+                    log.info(f"Successfully loaded endpoint configuration from '{YAML_FILE}'")
+                    return config
+                except yaml.YAMLError as e:
+                    log.error(f"Failed to parse YAML file '{YAML_FILE}': {e}")
+        except Exception as e:
+            log.error(f"Unexpected error while reading '{YAML_FILE}': {e}")
+
+    except botocore.exceptions.ClientError as e:
+        if e.response["Error"]["Code"] == "404":
+            log.error(f"{YAML_FILE} does not exist")
+        else:
+            log.error(f"There was an error downloading {YAML_FILE} from s3")
+
+    return None
 
 
 def prepare_packed_conda_env(s3: ServiceResource, experiment_id: str, run_id: str) -> str:
@@ -93,7 +174,7 @@ def prepare_packed_conda_env(s3: ServiceResource, experiment_id: str, run_id: st
         log.info("Uploading packed conda env to %s", s3key_env)
         try:
             s3.Bucket(required["S3_BUCKET_NAME"]).upload_file("./environment.tar.gz", s3key_env)
-            log.info("Uploaded environment.tar.gz into S3")
+            log.info("Uploaded environment.tar.gz into s3")
             log.info("Preparing conda env was successful. Cleaning up local files.")
             os.remove("conda.yaml")
             os.remove("environment.tar.gz")
@@ -106,7 +187,7 @@ def prepare_packed_conda_env(s3: ServiceResource, experiment_id: str, run_id: st
         if e.response["Error"]["Code"] == "404":
             log.error("The conda.yaml does not exist")
         else:
-            log.error("There was an error downloading conda.yaml")
+            log.error("There was an error downloading conda.yaml from s3")
         log.error("Preparing conda env failed")
         return "failed"
 
@@ -123,15 +204,22 @@ def process_message(
     """Process a single Kafka message."""
     experiment_id = message.value.get("experiment_id")
     run_id = message.value.get("run_id")
+
     if not experiment_id or not run_id:
         log.warning("Skipping message without experiment_id or run_id: %s", message.value)
+        return "skipped"
+
+    endpoint_configuration = get_model_endpoint_configuration(s3, experiment_id, run_id)
+    if endpoint_configuration is None or not validate_endpoint_config(endpoint_configuration):
         return "skipped"
 
     result = prepare_packed_conda_env(s3, experiment_id, run_id)
     if result == "failed":
         return "skipped"
 
-    required_env.update({"MLFLOW_EXPERIMENT_ID": experiment_id, "MLFLOW_RUN_ID": run_id})
+    keys_to_update = {"MLFLOW_EXPERIMENT_ID": experiment_id, "MLFLOW_RUN_ID": run_id}
+    keys_to_update.update({k.upper(): v for k, v in endpoint_configuration.items()})
+    required_env.update(keys_to_update)
 
     log.info("Deploying model for exp=%s run=%s", experiment_id, run_id)
     rendered_yaml = create_model_endpoint.fill_k8s_resource_template(required_env)
