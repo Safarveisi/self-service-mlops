@@ -201,20 +201,15 @@ def test_process_message_prepare_conda_env_skipped(monkeypatch):
     producer.send.assert_not_called()
 
 
-def test_validate_endpoint_config_returns_false():
+def test_validate_endpoint_config():
     import kafka_connector_consumer as mod
 
     config1 = {"concurrency": "10", "max_replicas": 3, "cpu": "2", "memory": "4Gi"}
     result1 = mod.validate_endpoint_config(config1)
     config2 = {"concurrency": "10", "cpu": "2", "memory": "4Gi"}
     result2 = mod.validate_endpoint_config(config2)
+    config3 = {"concurrency": 10, "max_replicas": 3, "cpu": "2", "memory": "4Gi"}
+    result3 = mod.validate_endpoint_config(config3)
     assert not result1
     assert not result2
-
-
-def test_validate_endpoint_config_returns_true():
-    import kafka_connector_consumer as mod
-
-    config = {"concurrency": 10, "max_replicas": 3, "cpu": "2", "memory": "4Gi"}
-    result = mod.validate_endpoint_config(config)
-    assert result
+    assert result3
