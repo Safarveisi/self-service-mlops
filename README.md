@@ -1,24 +1,40 @@
-- [Self service MLOps platform](#self-service-mlops-platform)
-    - [Deploy managed kubernetes cluster](#deploy-managed-kubernetes-cluster)
-    - [Deploy helm charts](#deploy-helm-charts)
-      - [Kafka](#kafka)
-      - [Monitoring (EFK stack + Prometheus and Grafana)](#monitoring-efk-stack--prometheus-and-grafana)
-    - [Create model inference endpoint (similar to AWS SageMaker endpoint)](#create-model-inference-endpoint-similar-to-aws-sagemaker-endpoint)
-      - [Kserve](#kserve)
-    - [Repository Guide](#repository-guide)
-    - [Code quality (linting, static code checks, and formatting)](#code-quality-linting-static-code-checks-and-formatting)
+<h1 align="center" style="border-bottom: none">
+    <a href="https://mlflow.org/">
+        <img alt="MLOps Platform" src="https://raw.githubusercontent.com/Safarveisi/self-service-mlops/refs/heads/master/assets/logo.png" width="200" />
+    </a>
+</h1>
 
-# Self service MLOps platform
+<h2 align="center" style="border-bottom: none">Self Service MLOps Platform</h2>
+
 
 In this project, we will build a self-service MLOps platform that enables data scientists to seamlessly deploy their machine-learning models for inference. The design below demonstrates how this can be achieved using AWS services; in practice, we will implement the solution with open-source technologies that provide equivalent capabilities.
 
+<div align="center">
+
+[![License](https://img.shields.io/github/license/Safarveisi/self-service-mlops)](https://github.com/Safarveisi/self-service-mlops/blob/master/LICENSE)
+[]()
+<a href="https://www.linkedin.com/in/sajad-safarveisi/" target="_blank">
+<img src="https://custom-icon-badges.demolab.com/badge/LinkedIn-0A66C2?logo=linkedin-white&logoColor=fff"
+      alt="follow on LinkedIn"></a>
+
+</div>
+
 Platform created via AWS services
 
-![self service mlops on aws](pngs/platform_aws.png)
+![self service mlops on aws](assets/platform_aws.png)
 
 Equivalent platform via open source tools and technologies
 
-![self service mlops via open source](pngs/platform_open_source.png)
+![self service mlops via open source](assets/platform_open_source.png)
+
+- [Deploy managed kubernetes cluster](#deploy-managed-kubernetes-cluster)
+- [Deploy helm charts](#deploy-helm-charts)
+  - [Kafka](#kafka)
+  - [Monitoring (EFK stack + Prometheus and Grafana)](#monitoring-efk-stack--prometheus-and-grafana)
+- [Create model inference endpoint (similar to AWS SageMaker endpoint)](#create-model-inference-endpoint-similar-to-aws-sagemaker-endpoint)
+  - [Kserve](#kserve)
+- [Repository Guide](#repository-guide)
+- [Code quality (linting, static code checks, and formatting)](#code-quality-linting-static-code-checks-and-formatting)
 
 ### Deploy managed kubernetes cluster
 
