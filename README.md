@@ -1,3 +1,13 @@
+- [Self service MLOps platform](#self-service-mlops-platform)
+    - [Deploy managed kubernetes cluster](#deploy-managed-kubernetes-cluster)
+    - [Deploy helm charts](#deploy-helm-charts)
+      - [Kafka](#kafka)
+      - [Monitoring (EFK stack + Prometheus and Grafana)](#monitoring-efk-stack--prometheus-and-grafana)
+    - [Create model inference endpoint (similar to AWS SageMaker endpoint)](#create-model-inference-endpoint-similar-to-aws-sagemaker-endpoint)
+      - [Kserve](#kserve)
+    - [Repository Guide](#repository-guide)
+    - [Code quality (linting, static code checks, and formatting)](#code-quality-linting-static-code-checks-and-formatting)
+
 # Self service MLOps platform
 
 In this project, we will build a self-service MLOps platform that enables data scientists to seamlessly deploy their machine-learning models for inference. The design below demonstrates how this can be achieved using AWS services; in practice, we will implement the solution with open-source technologies that provide equivalent capabilities.
