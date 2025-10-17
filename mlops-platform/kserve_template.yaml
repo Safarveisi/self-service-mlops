@@ -34,9 +34,9 @@ metadata:
   namespace: default  # Change this to a designated namespace
 spec:
   predictor:
-    containerConcurrency: 10 # Ten requests per pod (InferenceService replica)
+    containerConcurrency: ${CONCURRENCY} # Requests per pod (InferenceService replica)
     minReplicas: 1 # This prevents cold start
-    maxReplicas: 3 # Maximum number of pods (surplus requests will be buffered)
+    maxReplicas: ${MAX_REPLICAS} # Maximum number of pods (surplus requests will be buffered)
     serviceAccountName: sa
     model:
       modelFormat:
@@ -45,8 +45,8 @@ spec:
       storageUri: s3://${S3_BUCKET_NAME}/${MLFLOW_ROOT_PREFIX}/${MLFLOW_EXPERIMENT_ID}/${MLFLOW_RUN_ID}/artifacts/estimator
       resources: # Resources for each replica
         limits:
-          cpu: "3" # You can change these via the endpoint configuration located in the artifact's s3 path
-          memory: "5Gi"
+          cpu: "${CPU}"
+          memory: "${MEMORY}"
         requests:
-          cpu: "3" # Same here
-          memory: "5Gi"
+          cpu: "${CPU}"
+          memory: "${MEMORY}"

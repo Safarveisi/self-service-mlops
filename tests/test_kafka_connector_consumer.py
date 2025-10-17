@@ -41,18 +41,6 @@ def mock_kubernetes(monkeypatch):
     monkeypatch.setattr(kclient, "CustomObjectsApi", lambda *a, **k: DummyApi(), raising=True)
 
 
-def import_module(monkeypatch):
-    """
-    Import the target module safely:
-    - mock kubernetes classes in its namespace
-    """
-    # We cannot set builtins in the module; instead, patch in its import path
-    # Do a first lightweight import to locate the package name if needed.
-    import kafka_connector_consumer as mod
-
-    return mod
-
-
 def test_prepare_packed_conda_env_happy_path(monkeypatch):
     # Import after env fixture applied
     import kafka_connector_consumer as mod
@@ -93,6 +81,13 @@ def test_process_message_happy_path(monkeypatch):
     monkeypatch.setattr(mod, "run_command", lambda *a, **k: 0)
     monkeypatch.setattr(mod.os, "remove", lambda p: None)
     monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: "success")
+    monkeypatch.setattr(
+        mod,
+        "get_model_endpoint_configuration",
+        lambda *a, **k: {"concurrency": 4, "max_replicas": 2, "cpu": "2", "memory": "1000Mi"},
+    )
+    monkeypatch.setattr(mod, "validate_endpoint_config", lambda *a, **k: True)
+    monkeypatch.setattr(mod, "can_deploy_replicas", lambda *a, **k: True)
 
     # Fake endpoint creator behavior
     cme = Mock()
@@ -157,6 +152,13 @@ def test_process_message_timeout_path(monkeypatch):
     monkeypatch.setattr(mod, "run_command", lambda *a, **k: 0)
     monkeypatch.setattr(mod.os, "remove", lambda p: None)
     monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: "success")
+    monkeypatch.setattr(
+        mod,
+        "get_model_endpoint_configuration",
+        lambda *a, **k: {"concurrency": 4, "max_replicas": 2, "cpu": "2", "memory": "1000Mi"},
+    )
+    monkeypatch.setattr(mod, "validate_endpoint_config", lambda *a, **k: True)
+    monkeypatch.setattr(mod, "can_deploy_replicas", lambda *a, **k: True)
 
     cme = Mock()
     cme.fill_k8s_resource_template.return_value = "yaml"
@@ -186,8 +188,9 @@ def test_process_message_timeout_path(monkeypatch):
 def test_process_message_prepare_conda_env_skipped(monkeypatch):
     import kafka_connector_consumer as mod
 
-    # Stub out the external command runner & file removals
     monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: "failed")
+    monkeypatch.setattr(mod, "get_model_endpoint_configuration", lambda *a, **k: None)
+    monkeypatch.setattr(mod, "validate_endpoint_config", lambda *a, **k: False)
 
     cme = Mock()
     producer = Mock()
@@ -205,3 +208,17 @@ def test_process_message_prepare_conda_env_skipped(monkeypatch):
 
     assert status == "skipped"
     producer.send.assert_not_called()
+
+
+def test_validate_endpoint_config():
+    import kafka_connector_consumer as mod
+
+    config1 = {"concurrency": "10", "max_replicas": 3, "cpu": "2", "memory": "4Gi"}
+    result1 = mod.validate_endpoint_config(config1)
+    config2 = {"concurrency": "10", "cpu": "2", "memory": "4Gi"}
+    result2 = mod.validate_endpoint_config(config2)
+    config3 = {"concurrency": 10, "max_replicas": 3, "cpu": "2", "memory": "4Gi"}
+    result3 = mod.validate_endpoint_config(config3)
+    assert not result1
+    assert not result2
+    assert result3
