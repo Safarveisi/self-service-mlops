@@ -5,23 +5,21 @@ from check_k8s_resources import parse_cpu, parse_memory
 
 
 @pytest.mark.parametrize(
-    (
-        "input_s, expected",
-        [
-            ("250m", 0.25),  # standard milli format
-            ("100m", 0.1),
-            ("2000m", 2.0),  # large milli -> cores
-            ("12.5m", 0.0125),  # nonstandard but supported: float before 'm'
-            ("12m", 0.012),  # integer before 'm'
-            ("0m", 0.0),  # zero milli
-            ("2", 2.0),  # integer cores
-            ("0.5", 0.5),  # fractional cores
-            ("  250m  ", 0.25),  # whitespace trimming
-            ("abc123.5def", 123.5),  # fallback: extract number with decimal
-            ("abc123mxyz", 0.123),  # fallback + milli suffix -> extracted number divided by 1000
-            ("12.5", 12.5),  # plain float
-        ],
-    ),
+    ("input_s", "expected"),
+    [
+        ("250m", 0.25),  # standard milli format
+        ("100m", 0.1),
+        ("2000m", 2.0),  # large milli -> cores
+        ("12.5m", 0.0125),  # nonstandard but supported: float before 'm'
+        ("12m", 0.012),  # integer before 'm'
+        ("0m", 0.0),  # zero milli
+        ("2", 2.0),  # integer cores
+        ("0.5", 0.5),  # fractional cores
+        ("  250m  ", 0.25),  # whitespace trimming
+        ("abc123.5def", 123.5),  # fallback: extract number with decimal
+        ("abc123mxyz", 0.123),  # fallback + milli suffix -> extracted number divided by 1000
+        ("12.5", 12.5),  # plain float
+    ],
 )
 def test_parse_cpu_various(input_s, expected):
     val = parse_cpu(input_s)
@@ -50,19 +48,17 @@ def test_parse_cpu_malformed_but_extracts_first_number():
 
 
 @pytest.mark.parametrize(
-    (
-        "input_s, expected",
-        [
-            ("128Mi", 128 * 1024**2),
-            ("1Gi", 1 * 1024**3),
-            ("123Ki", 123 * 1024),
-            ("1024", 1024.0),  # plain integer bytes
-            (1024, 1024.0),  # numeric input
-            ("5Ti", 5 * 1024**4),
-            ("1Pi", 1 * 1024**5),
-            ("  64Mi  ", 64 * 1024**2),  # whitespace trimming
-        ],
-    ),
+    ("input_s", "expected"),
+    [
+        ("128Mi", 128 * 1024**2),
+        ("1Gi", 1 * 1024**3),
+        ("123Ki", 123 * 1024),
+        ("1024", 1024.0),  # plain integer bytes
+        (1024, 1024.0),  # numeric input
+        ("5Ti", 5 * 1024**4),
+        ("1Pi", 1 * 1024**5),
+        ("  64Mi  ", 64 * 1024**2),  # whitespace trimming
+    ],
 )
 def test_parse_memory_units(input_s, expected):
     val = parse_memory(input_s)
