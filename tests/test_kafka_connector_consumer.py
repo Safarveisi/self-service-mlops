@@ -81,8 +81,13 @@ def test_process_message_happy_path(monkeypatch):
     monkeypatch.setattr(mod, "run_command", lambda *a, **k: 0)
     monkeypatch.setattr(mod.os, "remove", lambda p: None)
     monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: "success")
-    monkeypatch.setattr(mod, "get_model_endpoint_configuration", lambda *a, **k: {})
+    monkeypatch.setattr(
+        mod,
+        "get_model_endpoint_configuration",
+        lambda *a, **k: {"concurrency": 4, "max_replicas": 2, "cpu": "2", "memory": "1000Mi"},
+    )
     monkeypatch.setattr(mod, "validate_endpoint_config", lambda *a, **k: True)
+    monkeypatch.setattr(mod, "can_deploy_replicas", lambda *a, **k: True)
 
     # Fake endpoint creator behavior
     cme = Mock()
@@ -147,8 +152,13 @@ def test_process_message_timeout_path(monkeypatch):
     monkeypatch.setattr(mod, "run_command", lambda *a, **k: 0)
     monkeypatch.setattr(mod.os, "remove", lambda p: None)
     monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: "success")
-    monkeypatch.setattr(mod, "get_model_endpoint_configuration", lambda *a, **k: {})
+    monkeypatch.setattr(
+        mod,
+        "get_model_endpoint_configuration",
+        lambda *a, **k: {"concurrency": 4, "max_replicas": 2, "cpu": "2", "memory": "1000Mi"},
+    )
     monkeypatch.setattr(mod, "validate_endpoint_config", lambda *a, **k: True)
+    monkeypatch.setattr(mod, "can_deploy_replicas", lambda *a, **k: True)
 
     cme = Mock()
     cme.fill_k8s_resource_template.return_value = "yaml"
@@ -178,7 +188,6 @@ def test_process_message_timeout_path(monkeypatch):
 def test_process_message_prepare_conda_env_skipped(monkeypatch):
     import kafka_connector_consumer as mod
 
-    # Stub out the external command runner & file removals
     monkeypatch.setattr(mod, "prepare_packed_conda_env", lambda *a, **k: "failed")
     monkeypatch.setattr(mod, "get_model_endpoint_configuration", lambda *a, **k: None)
     monkeypatch.setattr(mod, "validate_endpoint_config", lambda *a, **k: False)

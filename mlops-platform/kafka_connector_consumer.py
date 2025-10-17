@@ -13,6 +13,7 @@ import boto3
 import botocore
 import yaml
 from boto3.resources.factory import ServiceResource
+from check_k8s_resources import can_deploy_replicas
 from kafka import KafkaConsumer, KafkaProducer
 from model_endpoint import CreateModelEndpoint
 from utils import get_logger, run_command
@@ -211,6 +212,11 @@ def process_message(
 
     endpoint_configuration = get_model_endpoint_configuration(s3, experiment_id, run_id)
     if endpoint_configuration is None or not validate_endpoint_config(endpoint_configuration):
+        return "skipped"
+    cpu = endpoint_configuration["cpu"]
+    memory = endpoint_configuration["memory"]
+    max_replicas = endpoint_configuration["max_replicas"]
+    if not can_deploy_replicas(max_replicas, cpu, memory, debug=True):
         return "skipped"
 
     result = prepare_packed_conda_env(s3, experiment_id, run_id)
