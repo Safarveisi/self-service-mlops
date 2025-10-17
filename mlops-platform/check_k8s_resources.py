@@ -8,15 +8,32 @@ log = get_logger()
 
 
 def parse_cpu(cpu_str: str) -> float:
-    """Return CPU as number of cores (float). Accepts '250m', '2', or numeric."""
+    """
+    Return CPU as number of cores (float).
+    Accepts formats like:
+      - '250m'  -> 0.25
+      - '12.5m' -> 0.0125
+      - '2'     -> 2.0
+      - nonstandard strings like 'cpu: 0.5' or 'abc123mxyz'
+    """
     s = str(cpu_str).strip()
-    if s.endswith("m"):
-        # Milli-cores
-        return int(s[:-1]) / 1000.0
+    if not s:
+        return 0.0
+
+    # Milli-cores (e.g. "250m", "12.5m")
+    if "m" in s:
+        try:
+            return float(s[:-1]) / 1000.0
+        except ValueError:
+            # Fallback: extract numeric part before dividing
+            nums = re.findall(r"[\d.]+", s)
+            return float(nums[0]) / 1000.0 if nums else 0.0
+
+    # Plain numeric cores (int or float)
     try:
         return float(s)
     except ValueError:
-        # Fallback: nonstandard format
+        # Fallback: extract number from messy strings
         nums = re.findall(r"[\d.]+", s)
         return float(nums[0]) if nums else 0.0
 
@@ -43,6 +60,8 @@ def get_node_schedulable_free() -> dict[str, dict[str, float]]:
     Returns a dict keyed by node name with values:
       {"cpu_free": cores (float), "mem_free": bytes (float)}
     using allocatable - sum(requests_on_node).
+
+    NOTE: only considers containers that are currently in *running* state.
     """
     # load config
     try:
@@ -66,22 +85,80 @@ def get_node_schedulable_free() -> dict[str, dict[str, float]]:
             "mem_alloc": parse_memory(alloc.get("memory", "0")),
         }
 
-    # sum pod requests per node
+    # helper to check if a given container (by name) is currently running on the pod
+    def _is_container_running(pod, container_name: str, init: bool = False) -> bool:
+        """
+        Look up the matching ContainerStatus for the given container name and
+        return True only if its state indicates running.
+        """
+        try:
+            if init:
+                statuses = pod.status.init_container_statuses or []
+            else:
+                statuses = pod.status.container_statuses or []
+        except Exception:
+            return False
+
+        for st in statuses:
+            if st.name == container_name:
+                # ContainerState has attributes .running, .terminated, .waiting
+                state = getattr(st, "state", None)
+                if not state:
+                    return False
+                return getattr(state, "running", None) is not None
+        return False
+
+    # sum pod requests per node (only counting containers that are running)
     pods = v1.list_pod_for_all_namespaces().items
-    log.debug("Fetched %d pods from all namespaces.", len(pods))
+    log.info("Fetched %d pods from all namespaces.", len(pods))
     requests_by_node = defaultdict(lambda: {"cpu": 0.0, "mem": 0.0})
     for p in pods:
         node = p.spec.node_name
         if not node:
             continue
-        # include init containers + containers (init may request at least as much)
-        containers = (p.spec.init_containers or []) + (p.spec.containers or [])
-        for c in containers:
+        # include init containers + containers (but only if the specific container is running)
+        spec_init_containers = p.spec.init_containers or []
+        spec_containers = p.spec.containers or []
+
+        for c in spec_init_containers:
+            # only include if init container is currently running
+            if not _is_container_running(p, c.name, init=True):
+                log.debug(
+                    "Skipping init container %s in pod %s (not running)", c.name, p.metadata.name
+                )
+                continue
             if not c.resources:
                 continue
             req = c.resources.requests or {}
             cpu_add = parse_cpu(req.get("cpu", 0))
             mem_add = parse_memory(req.get("memory", 0))
+            log.info(
+                "Init container %s (pod=%s) requests cpu: %s and memory: %s",
+                c.name,
+                p.metadata.name,
+                cpu_add,
+                mem_add,
+            )
+            requests_by_node[node]["cpu"] += cpu_add
+            requests_by_node[node]["mem"] += mem_add
+
+        for c in spec_containers:
+            # only include if container is currently running
+            if not _is_container_running(p, c.name, init=False):
+                log.debug("Skipping container %s in pod %s (not running)", c.name, p.metadata.name)
+                continue
+            if not c.resources:
+                continue
+            req = c.resources.requests or {}
+            cpu_add = parse_cpu(req.get("cpu", 0))
+            mem_add = parse_memory(req.get("memory", 0))
+            log.info(
+                "Container %s (pod=%s) requests cpu: %s and memory: %s",
+                c.name,
+                p.metadata.name,
+                cpu_add,
+                mem_add,
+            )
             requests_by_node[node]["cpu"] += cpu_add
             requests_by_node[node]["mem"] += mem_add
 
