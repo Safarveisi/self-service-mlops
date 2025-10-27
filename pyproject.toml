@@ -117,6 +117,5 @@ kafka-python = "2.2.15"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^7.1.0"
-black = "^25.9.0"
 pre-commit = "^4.3.0"
 mlflow = "2.20.0"
