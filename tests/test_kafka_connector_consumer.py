@@ -177,7 +177,7 @@ def test_process_message_timeout_path(monkeypatch):
         s3,
         create_model_endpoint=cme,
         required_env=mod.required.copy(),
-        timeout_seconds=5,  # shorten to keep test quick
+        timeout_seconds=2,  # shorten to keep test quick
         retry_interval_seconds=1,
     )
 
