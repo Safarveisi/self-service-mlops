@@ -4,6 +4,6 @@ omit =
     mlops-platform/__init__.py
 
 [report]
-fail_under = 60
+fail_under = 75
 show_missing = False
 skip_covered = False
