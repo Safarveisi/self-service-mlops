@@ -51,7 +51,7 @@ if __name__ == "__main__":
         status = message.value.get("status", "")
         message = message.value.get("message", "")
 
-        log.info(
+        log.info(  # Log the status of the inference service (kibana logs)
             f"Status for {inference_service_name} in namespace "
             f"{inference_service_namespace} is {status}."
             f" Experiment ID: {experiment_id}, Run ID: {run_id}."
