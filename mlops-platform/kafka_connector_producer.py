@@ -11,10 +11,10 @@ import json
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from kafka import KafkaProducer
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from utils import get_logger
 
 log = get_logger()
@@ -92,21 +92,32 @@ async def mlflow_webhook(request: Request) -> JSONResponse:
     raw = await request.body()
     try:
         data = json.loads(raw.decode("utf-8"))
-    except Exception:
+    except Exception as e:
         log.error("Invalid JSON received: %s", raw)
-        raise HTTPException(status_code=400, detail="Invalid JSON")
+        return JSONResponse({"error": "Invalid JSON", "details": e.errors()}, status_code=400)
 
     log.info("Running data validation: %s", data)
     # Validate & coerce types
-    payload = SetModelVersionTagPayload.model_validate(data)
+    try:
+        payload = SetModelVersionTagPayload.model_validate(data)
+    except ValidationError as e:
+        log.error("Data validation error: %s", e)
+        return JSONResponse({"error": "Invalid data", "details": e.errors()}, status_code=422)
 
     log.info(
         "Producing message to Kafka topic %s",
         required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"],
     )
     future = producer.send(required["KAFKA_TOPIC_MODEL_PRODUCTION_VERSION"], payload.model_dump())
-    # If you want non-blocking, remove .get(); here we wait up to 10s like your snippet.
-    metadata = future.get(timeout=10)
+    # Block until a single message is sent (or timeout)
+    try:
+        metadata = future.get(timeout=10)
+    except Exception as e:
+        log.error("Failed to send message to Kafka: %s", e)
+        return JSONResponse(
+            {"error": "Failed to send message to Kafka", "details": e.errors()}, status_code=500
+        )
+
     log.info(
         "Message sent to topic %s partition %d offset %d",
         metadata.topic,

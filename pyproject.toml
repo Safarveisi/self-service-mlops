@@ -1,6 +1,6 @@
 [project]
 name = "self-service-mlops"
-version = "0.4.0"
+version = "0.5.0"
 description = ""
 authors = [
     { name = "Safarveisi", email = "sajad.safarveisi@gmail.com" },
@@ -120,3 +120,4 @@ coverage = "^7.11.0"
 ipykernel = "^7.1.0"
 pre-commit = "^4.3.0"
 mlflow = "2.20.0"
+fastapi = "^0.121.0"
