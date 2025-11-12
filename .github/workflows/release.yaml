@@ -6,10 +6,12 @@ on:
       - master
     paths:
       - 'mlops-platform/**'
+      - '!mlops-platform/*.sh'
   pull_request:
     types: [opened, synchronize]
     paths:
         - 'mlops-platform/**'
+        - '!mlops-platform/*.sh'
 
 permissions:
   contents: read # access to check out code and install dependencies
