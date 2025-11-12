@@ -2,6 +2,8 @@
 This is where we notify downstream components in the
 platform that the endpoint for the MLflow model
 was successfully created using KServe.
+
+At the moment, we just log the events.
 """
 
 import json

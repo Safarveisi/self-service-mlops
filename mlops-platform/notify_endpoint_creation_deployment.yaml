@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: endpoint-notifier
-          image: ciaa/mlops-comps:v0.5.0 # LATEST_IMAGE_TAG
+          image: ciaa/mlops-comps:v0.6.0 # LATEST_IMAGE_TAG
           imagePullPolicy: Always
           command: ["python", "notify_endpoint_creation.py"]
           env:
