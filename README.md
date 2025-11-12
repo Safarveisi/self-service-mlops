@@ -11,7 +11,7 @@ In this project, we will build a self-service MLOps platform that enables data s
 
 <div align="center">
 
-[![CI](https://github.com/Safarveisi/self-service-mlops/actions/workflows/ci.yaml/badge.svg)](https://github.com/Safarveisi/self-service-mlops/actions/workflows/ci.yaml/badge.svg)
+[![CI](https://github.com/Safarveisi/self-service-mlops/actions/workflows/ci.yaml/badge.svg)](https://github.com/Safarveisi/self-service-mlops/actions/workflows/ci.yaml)
 [![GitHub Tag](https://img.shields.io/github/v/tag/Safarveisi/self-service-mlops)]()
 [![License](https://img.shields.io/github/license/Safarveisi/self-service-mlops)](https://github.com/Safarveisi/self-service-mlops/blob/master/LICENSE)
 []()
